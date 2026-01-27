@@ -1,0 +1,88 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return request.auth != null && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+    
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    function isValidDocument() {
+      return request.resource.contentType.matches('(image/.*|application/pdf)') &&
+             request.resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{imageId} {
+      // Users can read their own profile images
+      allow read: if isAuthenticated();
+      
+      // Users can upload/update their own profile images
+      allow write: if isOwner(userId) && isValidImage();
+      
+      // Admins have full access
+      allow read, write: if isAdmin();
+    }
+    
+    // Driver verification documents
+    match /drivers/{userId}/documents/{documentId} {
+      // Only the driver can read their own documents
+      allow read: if isOwner(userId);
+      
+      // Drivers can upload their verification documents
+      allow write: if isOwner(userId) && isValidDocument();
+      
+      // Admins can read all driver documents
+      allow read: if isAdmin();
+    }
+    
+    // Vehicle images
+    match /drivers/{userId}/vehicle/{imageId} {
+      // Drivers can read their own vehicle images
+      allow read: if isOwner(userId);
+      
+      // Drivers can upload vehicle images
+      allow write: if isOwner(userId) && isValidImage();
+      
+      // Admins can read all vehicle images
+      allow read: if isAdmin();
+    }
+    
+    // Tiffin vendor images
+    match /tiffin/vendors/{vendorId}/{imageId} {
+      // Anyone authenticated can read vendor images
+      allow read: if isAuthenticated();
+      
+      // Only admins can upload/update vendor images
+      allow write: if isAdmin() && isValidImage();
+    }
+    
+    // Trip receipts/invoices
+    match /trips/{tripId}/receipt/{fileId} {
+      // Users involved in the trip can read receipts
+      allow read: if isAuthenticated();
+      
+      // System/admin can generate receipts
+      allow write: if isAdmin();
+    }
+    
+    // Default deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

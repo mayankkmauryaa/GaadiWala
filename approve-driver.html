@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Approve Driver</title>
+</head>
+<body>
+    <h1>Driver Approval Tool</h1>
+    <button onclick="approveDriver()">Approve Waleedul Haque</button>
+    <div id="status"></div>
+    
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js';
+        import { getFirestore, collection, query, where, getDocs, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+            authDomain: "gaadiwala-app.firebaseapp.com",
+            projectId: "gaadiwala-app",
+            storageBucket: "gaadiwala-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdefghijklmnop"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.approveDriver = async function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = 'Searching for driver...';
+            
+            try {
+                // Find the driver by name
+                const q = query(collection(db, 'users'), where('name', '==', 'Waleedul Haque'), where('role', '==', 'DRIVER'));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    statusDiv.innerHTML = 'Driver not found!';
+                    return;
+                }
+                
+                const driverDoc = snapshot.docs[0];
+                const driverId = driverDoc.id;
+                const driverData = driverDoc.data();
+                
+                statusDiv.innerHTML = `Found driver: ${driverData.name}<br>Current approval status: ${driverData.isApproved}<br>Approving...`;
+                
+                // Update the driver to be approved
+                await updateDoc(doc(db, 'users', driverId), {
+                    isApproved: true,
+                    isActive: true,
+                    isOnline: true,
+                    vehicleType: 'MINI', // Set default vehicle type if missing
+                    vehicleModel: driverData.vehicleModel || 'Gaadiwala Partner Vehicle',
+                    rating: driverData.rating || 4.9
+                });
+                
+                statusDiv.innerHTML = `✅ Driver ${driverData.name} has been approved and is now online!<br>They should now be able to see ride requests.`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+            }
+        };
+    </script>
+</body>
+</html>

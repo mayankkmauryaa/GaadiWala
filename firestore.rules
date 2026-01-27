@@ -1,0 +1,165 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+    
+    function isDriver() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'DRIVER';
+    }
+    
+    function isApprovedDriver() {
+      return isDriver() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read their own profile
+      allow read: if isOwner(userId);
+      
+      // All authenticated users can read any user profile (for driver discovery)
+      allow read: if isAuthenticated();
+      
+      // Users can create their own profile during signup
+      allow create: if isOwner(userId);
+      
+      // Users can update their own profile
+      allow update: if isOwner(userId);
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+      
+      // Admins can read/update any user
+      allow read, update: if isAdmin();
+    }
+    
+    // Rides collection
+    match /rides/{rideId} {
+      // Riders can create ride requests
+      allow create: if isAuthenticated() && request.resource.data.riderId == request.auth.uid;
+      
+      // Anyone authenticated can read rides (needed for queries with where clauses)
+      allow read: if isAuthenticated();
+      
+      // Riders can update their own rides (e.g., cancel)
+      allow update: if isAuthenticated() && resource.data.riderId == request.auth.uid;
+      
+      // Drivers can update rides assigned to them (e.g., accept, complete)
+      allow update: if isAuthenticated() && 
+                       (resource.data.driverId == request.auth.uid || 
+                        resource.data.driverId == null ||
+                        !('driverId' in resource.data));
+      
+      // Admins have full access
+      allow read, write: if isAdmin();
+    }
+    
+    // Tiffin vendors collection
+    match /tiffinVendors/{vendorId} {
+      // Anyone authenticated can read vendors
+      allow read: if isAuthenticated();
+      
+      // Only admins can create/update/delete vendors
+      allow write: if isAdmin();
+    }
+    
+    // Tiffin orders collection
+    match /tiffinOrders/{orderId} {
+      // Users can read their own orders
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can create orders
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own orders (e.g., cancel)
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Drivers can read and update orders assigned to them or unassigned ones
+      allow read, update: if isApprovedDriver() && 
+                           (resource.data.driverId == request.auth.uid || 
+                            resource.data.driverId == null ||
+                            !('driverId' in resource.data));
+      
+      // Admins have full access
+      allow read, write: if isAdmin();
+    }
+    
+    // Wallet transactions
+    match /walletTransactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Only system/admin can create transactions
+      allow create: if isAdmin();
+      
+      // No updates or deletes allowed
+      allow update, delete: if false;
+      
+      // Admins can read all transactions
+      allow read: if isAdmin();
+    }
+    
+    // Promo codes
+    match /promoCodes/{codeId} {
+      // Anyone authenticated can read active promo codes
+      allow read: if isAuthenticated() && resource.data.isActive == true;
+      
+      // Only admins can manage promo codes
+      allow write: if isAdmin();
+    }
+    
+    // Reports
+    match /reports/{reportId} {
+      // Users can create reports
+      allow create: if isAuthenticated() && request.resource.data.reporterId == request.auth.uid;
+      
+      // Users can read their own reports
+      allow read: if isAuthenticated() && resource.data.reporterId == request.auth.uid;
+      
+      // Only admins can read all reports and update status
+      allow read, update: if isAdmin();
+    }
+    
+    // System configuration (admin only)
+    match /systemConfig/{configId} {
+      // Anyone can read system config
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow write: if isAdmin();
+    }
+    
+    // Chat messages
+    match /chats/{chatId}/messages/{messageId} {
+      // Participants can read messages
+      allow read: if isAuthenticated() && 
+                     (get(/databases/$(database)/documents/chats/$(chatId)).data.participants[request.auth.uid] == true);
+      
+      // Participants can create messages
+      allow create: if isAuthenticated() && 
+                       request.resource.data.senderId == request.auth.uid;
+      
+      // No updates or deletes
+      allow update, delete: if false;
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

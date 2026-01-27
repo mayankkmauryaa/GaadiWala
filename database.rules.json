@@ -1,0 +1,22 @@
+{
+    "rules": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "users": {
+            "$userId": {
+                ".read": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('role').val() === 'ADMIN')",
+                ".write": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('role').val() === 'ADMIN')"
+            }
+        },
+        "systemConfig": {
+            ".read": "auth != null",
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'ADMIN'"
+        },
+        "activeRides": {
+            "$rideId": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+            }
+        }
+    }
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Driver Debug</title>
+</head>
+<body>
+    <h1>Driver Debug Info</h1>
+    <p>Check the browser console for driver status and ride matching info.</p>
+    
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js';
+        import { getFirestore, collection, query, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+            authDomain: "gaadiwala-app.firebaseapp.com",
+            projectId: "gaadiwala-app",
+            storageBucket: "gaadiwala-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdefghijklmnop"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Listen to all rides
+        const ridesQuery = query(collection(db, 'rides'));
+        onSnapshot(ridesQuery, (snapshot) => {
+            console.log('=== ALL RIDES ===');
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                console.log(`Ride ${doc.id}:`, {
+                    status: data.status,
+                    vehicleType: data.vehicleType,
+                    riderId: data.riderId,
+                    driverId: data.driverId,
+                    createdAt: data.createdAt
+                });
+            });
+        });
+        
+        // Listen to all drivers
+        const driversQuery = query(collection(db, 'users'), where('role', '==', 'DRIVER'));
+        onSnapshot(driversQuery, (snapshot) => {
+            console.log('=== ALL DRIVERS ===');
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                console.log(`Driver ${doc.id}:`, {
+                    name: data.name,
+                    isApproved: data.isApproved,
+                    isOnline: data.isOnline,
+                    vehicleType: data.vehicleType,
+                    role: data.role
+                });
+            });
+        });
+    </script>
+</body>
+</html>
