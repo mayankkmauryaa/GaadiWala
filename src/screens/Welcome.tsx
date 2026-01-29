@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserRole } from '../types';
 // import { CONFIG } from '../firebase';
@@ -603,32 +604,6 @@ const Welcome: React.FC = () => {
                                 India's first unified mobility ecosystem. From electric autos to premium sedans, all in one app.
                             </p>
                         </div>
-
-                        {/* How It Works - Beside Login Form */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 bg-white/10 backdrop-blur-md p-6 rounded-[2rem] border border-white/20 shadow-2xl">
-                            <div className="text-center group">
-                                <div className="size-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
-                                    <span className="material-symbols-outlined">location_on</span>
-                                </div>
-                                <h4 className="font-black uppercase text-xs tracking-widest mb-1">1. Book</h4>
-                                <p className="text-[10px] text-white/70 font-medium">Choose your pickup & drop location</p>
-                            </div>
-                            <div className="text-center group">
-                                <div className="size-12 rounded-2xl bg-teal-500 text-white flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
-                                    <span className="material-symbols-outlined">directions_car</span>
-                                </div>
-                                <h4 className="font-black uppercase text-xs tracking-widest mb-1">2. Match</h4>
-                                <p className="text-[10px] text-white/70 font-medium">Get matched with a nearby driver</p>
-                            </div>
-                            <div className="text-center group">
-                                <div className="size-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center mx-auto mb-3 shadow-lg group-hover:scale-110 transition-transform">
-                                    <span className="material-symbols-outlined">security</span>
-                                </div>
-                                <h4 className="font-black uppercase text-xs tracking-widest mb-1">3. Ride</h4>
-                                <p className="text-[10px] text-white/70 font-medium">Enjoy a safe & comfortable journey</p>
-                            </div>
-                        </div>
-
                         <div className="flex justify-center lg:justify-start gap-4 pt-4">
                             <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20">
                                 <p className="text-3xl font-black">4.8</p>
@@ -638,6 +613,121 @@ const Welcome: React.FC = () => {
                                 <p className="text-3xl font-black">24/7</p>
                                 <p className="text-[10px] uppercase tracking-widest opacity-80">Support</p>
                             </div>
+                        </div>
+
+                        {/* How It Works - Beside Login Form */}
+                        {/* How It Works - No outer container, animated flow */}
+                        <div className="grid grid-cols-3 gap-2 lg:gap-12 relative z-10 max-w-lg mx-auto md:max-w-none">
+                            {/* Step 1 */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+                                onClick={scrollToAuth}
+                                className="text-center group cursor-pointer p-6 rounded-[2.5rem] transition-all active:scale-95 relative"
+                            >
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="size-16 rounded-3xl bg-orange-500 text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform"
+                                >
+                                    <span className="material-symbols-outlined text-2xl">location_on</span>
+                                </motion.div>
+                                <h4 className="font-black uppercase text-[10px] md:text-sm tracking-wider mb-1 md:mb-2 text-white">1. Book</h4>
+                                <p className="text-[9px] md:text-xs text-white/60 font-medium leading-tight hidden md:block">Choose your pickup &<br />drop location</p>
+                                <p className="text-[8px] md:hidden text-white/50 leading-tight">Pick Location</p>
+
+                                {/* Connector - Visible on all screens now, horizontal */}
+                                <div className="absolute top-8 md:top-14 left-[60%] w-[80%] h-[2px] z-[-1]">
+                                    <svg width="100%" height="20" className="overflow-visible">
+                                        <motion.path
+                                            d="M 0 10 Q 50 0, 100 10"
+                                            fill="transparent"
+                                            stroke="rgba(255,255,255,0.1)"
+                                            strokeWidth="2"
+                                            strokeDasharray="4 4"
+                                            initial={{ pathLength: 0 }}
+                                            whileInView={{ pathLength: 1 }}
+                                            transition={{ duration: 1, delay: 0.5 }}
+                                        />
+                                    </svg>
+                                </div>
+                            </motion.div>
+
+                            {/* Step 2 */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.2 }}
+                                onClick={scrollToAuth}
+                                className="text-center group cursor-pointer p-6 rounded-[2.5rem] transition-all active:scale-95 relative"
+                            >
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                                    className="size-16 rounded-3xl bg-teal-500 text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-teal-500/20 group-hover:scale-110 group-hover:-rotate-3 transition-transform"
+                                >
+                                    <span className="material-symbols-outlined text-2xl">directions_car</span>
+                                </motion.div>
+                                <h4 className="font-black uppercase text-[10px] md:text-sm tracking-wider mb-1 md:mb-2 text-white">2. Match</h4>
+                                <p className="text-[9px] md:text-xs text-white/60 font-medium leading-tight hidden md:block">Get matched with a<br />nearby driver</p>
+                                <p className="text-[8px] md:hidden text-white/50 leading-tight">Find Driver</p>
+
+                                {/* Connector */}
+                                <div className="absolute top-8 md:top-14 left-[60%] w-[80%] h-[2px] z-[-1]">
+                                    <svg width="100%" height="20" className="overflow-visible">
+                                        <motion.path
+                                            d="M 0 10 Q 50 20, 100 10"
+                                            fill="transparent"
+                                            stroke="rgba(255,255,255,0.1)"
+                                            strokeWidth="2"
+                                            strokeDasharray="4 4"
+                                            initial={{ pathLength: 0 }}
+                                            whileInView={{ pathLength: 1 }}
+                                            transition={{ duration: 1, delay: 1 }}
+                                        />
+                                    </svg>
+                                </div>
+                            </motion.div>
+
+                            {/* Step 3 */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-100px" }}
+                                transition={{ type: "spring", bounce: 0.5, duration: 0.8, delay: 0.4 }}
+                                onClick={scrollToAuth}
+                                className="text-center group cursor-pointer p-6 rounded-[2.5rem] transition-all active:scale-95 relative"
+                            >
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                                    className="size-16 rounded-3xl bg-blue-500 text-white flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-transform"
+                                >
+                                    <span className="material-symbols-outlined text-2xl">security</span>
+                                </motion.div>
+                                <h4 className="font-black uppercase text-[10px] md:text-sm tracking-wider mb-1 md:mb-2 text-white">3. Ride</h4>
+                                <p className="text-[9px] md:text-xs text-white/60 font-medium leading-tight hidden md:block">Enjoy a safe &<br />comfortable journey</p>
+                                <p className="text-[8px] md:hidden text-white/50 leading-tight">Safe Journey</p>
+                            </motion.div>
+                        </div>
+
+                        {/* Animated Background Flow Line (Subtle) */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <motion.div
+                                animate={{
+                                    x: ['-100%', '100%'],
+                                    opacity: [0, 0.5, 0]
+                                }}
+                                transition={{
+                                    duration: 3,
+                                    repeat: Infinity,
+                                    ease: "linear"
+                                }}
+                                className="absolute top-14 left-0 w-32 h-[1px] bg-gradient-to-r from-transparent via-orange-500 to-transparent blur-sm"
+                            />
                         </div>
                     </div>
                 </div>
@@ -687,7 +777,7 @@ const Welcome: React.FC = () => {
 
                 {/* Scrolling Container */}
                 <div className="relative group">
-                    <div className="animate-marquee hover:pause flex items-stretch gap-8 whitespace-nowrap px-6">
+                    <div className="animate-marquee flex items-stretch gap-8 whitespace-nowrap px-6" style={{ animationDuration: '40s', width: 'max-content' }}>
                         {[
                             {
                                 name: "Priya Sharma",
@@ -710,7 +800,7 @@ const Welcome: React.FC = () => {
                                 rating: 5,
                                 img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amit"
                             },
-                            // Duplicate for seamless loop
+                            // Set 2
                             {
                                 name: "Priya Sharma",
                                 role: "Daily Commuter",
@@ -731,7 +821,51 @@ const Welcome: React.FC = () => {
                                 text: "The 'Prime' cars are always clean and the drivers are professional. Great for my client meetings.",
                                 rating: 5,
                                 img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amit"
-                            }
+                            },
+                            // Set 3
+                            {
+                                name: "Priya Sharma",
+                                role: "Daily Commuter",
+                                text: "Gaadiwala has completely changed my daily travel. The 'Pink Cab' feature makes me feel so safe returning home late from work.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+                            },
+                            {
+                                name: "Rahul Verma",
+                                role: "Student",
+                                text: "Shared rides save me so much money! Plus I've met some cool people. Best app for students in Mathura.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+                            },
+                            {
+                                name: "Amit Patel",
+                                role: "Business Traveler",
+                                text: "The 'Prime' cars are always clean and the drivers are professional. Great for my client meetings.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amit"
+                            },
+                            // Set 4
+                            {
+                                name: "Priya Sharma",
+                                role: "Daily Commuter",
+                                text: "Gaadiwala has completely changed my daily travel. The 'Pink Cab' feature makes me feel so safe returning home late from work.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya"
+                            },
+                            {
+                                name: "Rahul Verma",
+                                role: "Student",
+                                text: "Shared rides save me so much money! Plus I've met some cool people. Best app for students in Mathura.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul"
+                            },
+                            {
+                                name: "Amit Patel",
+                                role: "Business Traveler",
+                                text: "The 'Prime' cars are always clean and the drivers are professional. Great for my client meetings.",
+                                rating: 5,
+                                img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amit"
+                            },
                         ].map((review, i) => (
                             <div key={i} className="w-[350px] md:w-[450px] bg-white p-10 rounded-[3rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all border border-slate-100 group/card inline-block whitespace-normal mr-8">
                                 <div className="flex gap-1 text-orange-400 mb-8 group-hover/card:scale-105 transition-transform origin-left">
@@ -928,7 +1062,7 @@ const Welcome: React.FC = () => {
                                 <div className="size-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                                     <span className="material-symbols-outlined text-white font-black">directions_car</span>
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tighter uppercase italic">GAADIWALA</h2>
+                                <h2 className="text-4xl font-black tracking-tighter uppercase">GAADIWALA</h2>
                             </div>
                             <p className="text-slate-400 text-lg max-w-sm mb-10 leading-relaxed">
                                 Intelligence in Motion. Building the future of shared mobility for a billion people with AI-driven safety and sustainable electric fleets.
@@ -1043,91 +1177,97 @@ const Welcome: React.FC = () => {
                 </div>
             </footer>
 
-            {user && !loading && (user.role === UserRole.UNSET || !user.gender) && (
-                <ProfileCompletionOverlay user={user} updateUserProfile={updateUserProfile} logout={logout} />
-            )}
+            {
+                user && !loading && (user.role === UserRole.UNSET || !user.gender) && (
+                    <ProfileCompletionOverlay user={user} updateUserProfile={updateUserProfile} logout={logout} />
+                )
+            }
 
             {/* About Us Team Modal */}
-            {showAboutModal && (
-                <div
-                    className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-500"
-                    onClick={(e) => e.target === e.currentTarget && setShowAboutModal(false)}
-                >
-                    <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300">
-                        <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-orange-500 via-pink-500 to-teal-500"></div>
-                        <button
-                            onClick={() => setShowAboutModal(false)}
-                            className="absolute top-6 right-6 size-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all group"
-                        >
-                            <span className="material-symbols-outlined text-xl group-hover:rotate-90 transition-transform">close</span>
-                        </button>
+            {
+                showAboutModal && (
+                    <div
+                        className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-500"
+                        onClick={(e) => e.target === e.currentTarget && setShowAboutModal(false)}
+                    >
+                        <div className="bg-white rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300">
+                            <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-orange-500 via-pink-500 to-teal-500"></div>
+                            <button
+                                onClick={() => setShowAboutModal(false)}
+                                className="absolute top-6 right-6 size-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all group"
+                            >
+                                <span className="material-symbols-outlined text-xl group-hover:rotate-90 transition-transform">close</span>
+                            </button>
 
-                        <div className="text-center mb-12">
-                            <span className="text-orange-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">Our Visionaries</span>
-                            <h2 className="text-4xl font-black tracking-tighter">Meet the Team</h2>
-                        </div>
+                            <div className="text-center mb-12">
+                                <span className="text-orange-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">Our Visionaries</span>
+                                <h2 className="text-4xl font-black tracking-tighter">Meet the Team</h2>
+                            </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {[
-                                { name: "Mayank Maurya", role: "Founder & Lead Architect", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mayank", bio: "Full-stack visionary driving mobility innovation.", contact: "hpmayankmaurya@gmail.com" },
-                                { name: "Waleed ul Haque", role: "Lead Developer", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Waleed", bio: "Architecting scalable systems for next-gen transport.", contact: "waleedulhaque3@gmail.com" },
-                                { name: "Nishant Chaudhary", role: "Operations Head", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nishant", bio: "Optimizing ground operations and safety protocols.", contact: "nishant@gaadiwala.com" },
-                                { name: "Vikram Singh", role: "Product Integrity", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram_1", bio: "Ensuring safety and reliability at every milestone.", contact: "vikram@gaadiwala.com" }
-                            ].map((member, i) => (
-                                <div key={i} className="flex items-center gap-4 p-4 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-orange-200 transition-all">
-                                    <img src={member.img} className="size-16 rounded-2xl bg-white shadow-md group-hover:scale-110 transition-transform" alt={member.name} />
-                                    <div>
-                                        <h4 className="font-black text-slate-900 leading-none mb-1">{member.name}</h4>
-                                        <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-1">{member.role}</p>
-                                        <p className="text-[10px] text-slate-400 font-medium leading-tight mb-2">{member.bio}</p>
-                                        <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full w-fit group-hover:bg-orange-50 transition-colors">
-                                            <span className="material-symbols-outlined text-[10px]">mail</span>
-                                            {member.contact}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {[
+                                    { name: "Mayank Maurya", role: "Founder & Lead Architect", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mayank", bio: "Full-stack visionary driving mobility innovation.", email: "hpmayankmaurya@gmail.com" },
+                                    { name: "Nishant Chaudhary", role: "Co-Founder & CTO", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nishant", bio: "Optimizing ground operations and safety protocols.", email: "nishant7668245845@gmail com" },
+                                    { name: "Waleed ul Haque", role: "Lead Developer", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Waleed", bio: "Architecting scalable systems for next-gen transport.", email: "waleedulhaque3@gmail.com" },
+                                    // { name: "", role: "", img: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram_1", bio: "", email: "" }
+                                ].map((member, i) => (
+                                    <div key={i} className="flex items-center gap-4 p-4 rounded-3xl bg-slate-50 border border-slate-100 group hover:border-orange-200 transition-all">
+                                        <img src={member.img} className="size-16 rounded-2xl bg-white shadow-md group-hover:scale-110 transition-transform" alt={member.name} />
+                                        <div>
+                                            <h4 className="font-black text-slate-900 leading-none mb-1">{member.name}</h4>
+                                            <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-1">{member.role}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium leading-tight mb-2">{member.bio}</p>
+                                            <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full w-fit group-hover:bg-orange-50 transition-colors">
+                                                <span className="material-symbols-outlined text-[10px]">mail</span>
+                                                {member.email}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
 
-                        <div className="mt-12 text-center">
-                            <p className="text-slate-500 text-xs font-medium">Building the future of mobility, together.</p>
+                            <div className="mt-12 text-center">
+                                <p className="text-slate-500 text-xs font-medium">Building the future of mobility, together.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Info Modal System */}
-            {infoModal && (
-                <div
-                    className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-300"
-                    onClick={(e) => e.target === e.currentTarget && setInfoModal(null)}
-                >
-                    <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden border border-white/20 animate-in slide-in-from-bottom-12 duration-500">
-                        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-orange-500 to-orange-600"></div>
-                        <button
-                            onClick={() => setInfoModal(null)}
-                            className="absolute top-6 right-6 size-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all"
-                        >
-                            <span className="material-symbols-outlined text-xl">close</span>
-                        </button>
+            {
+                infoModal && (
+                    <div
+                        className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-300"
+                        onClick={(e) => e.target === e.currentTarget && setInfoModal(null)}
+                    >
+                        <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden border border-white/20 animate-in slide-in-from-bottom-12 duration-500">
+                            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-orange-500 to-orange-600"></div>
+                            <button
+                                onClick={() => setInfoModal(null)}
+                                className="absolute top-6 right-6 size-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all"
+                            >
+                                <span className="material-symbols-outlined text-xl">close</span>
+                            </button>
 
-                        <div className="mb-8">
-                            <span className="text-orange-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">Information</span>
-                            <h2 className="text-3xl font-black tracking-tighter">{infoModal.title}</h2>
-                        </div>
+                            <div className="mb-8">
+                                <span className="text-orange-500 font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">Information</span>
+                                <h2 className="text-3xl font-black tracking-tighter">{infoModal.title}</h2>
+                            </div>
 
-                        <div className="text-slate-600 font-medium leading-relaxed text-lg">
-                            {infoModal.content}
-                        </div>
+                            <div className="text-slate-600 font-medium leading-relaxed text-lg">
+                                {infoModal.content}
+                            </div>
 
-                        <div className="mt-12 pt-6 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            <span>Gaadiwala Ecosystem</span>
-                            <span>© 2026</span>
+                            <div className="mt-12 pt-6 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <span>Gaadiwala Ecosystem</span>
+                                <span>© 2026</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

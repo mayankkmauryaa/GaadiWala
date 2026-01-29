@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
-import { Language, User, RideRequest, RideStatus, TiffinOrder, VehicleCategory } from '../../types';
+import { Language, User, RideRequest, RideStatus, TiffinOrder, VehicleCategory, Coordinates } from '../../types';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Chat from '../../components/shared/Chat';
 import { useClickOutside } from '../../hooks/useClickOutside';
@@ -12,6 +12,7 @@ import MapContainer from '../../components/MapContainer';
 import { watchPosition, clearWatch, GeolocationError, GeolocationErrorType } from '../../utils/GeolocationHelper';
 import { optimizeTiffinBatch, OptimizationResult, OptimizedStop } from '../../services/RouteOptimizationService';
 import { getNearestRoad } from '../../services/RoadsService';
+import { validateAddress } from '../../services/LocationService';
 import { CONFIG } from '../../firebase';
 import ScrollHint from '../../components/shared/ScrollHint';
 
@@ -55,6 +56,7 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
     const [newRouteDest, setNewRouteDest] = useState('');
     const [newRoutePrice, setNewRoutePrice] = useState('');
     const [locationError, setLocationError] = useState<string | null>(null);
+    const [mapCenter, setMapCenter] = useState<Coordinates | undefined>(user.currentLocation);
     const statsRef = useRef<HTMLElement>(null);
 
     useClickOutside(statsRef, () => setShowStats(false));
@@ -304,11 +306,26 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
         else setTier('Bronze');
     }, [user.totalRides, completedRidesToday]);
 
-    const handleNavigate = (destination: string) => {
+    const handleNavigate = async (destination: string, external: boolean = false) => {
         if (!destination) return;
-        // Open Google Maps Navigation
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
-        window.open(url, '_blank');
+
+        if (external) {
+            // Open Google Maps Navigation
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+            window.open(url, '_blank');
+        } else {
+            // Internal search: Geocode and center map
+            try {
+                const result = await validateAddress(destination, CONFIG.MAPS_API_KEY);
+                if (result.coordinates) {
+                    setMapCenter(result.coordinates);
+                } else {
+                    alert("Location not found. Please try a more specific address.");
+                }
+            } catch (err) {
+                console.error("Geocoding failed", err);
+            }
+        }
     };
 
     const handleUpdateStatus = async (newStatus: RideStatus) => {
@@ -530,43 +547,29 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
     }
 
     return (
-        <div className="dark bg-[#0A0E12] text-slate-100 font-display min-h-dvh h-dvh overflow-hidden flex flex-col pb-safe">
+        <div className="dark bg-[#0A0E12] text-slate-100 font-display min-h-dvh h-dvh overflow-hidden flex flex-col pb-safe relative">
             <GlobalBanner />
-            <header className="h-16 border-b border-white/10 bg-[#161B22] px-4 md:px-6 flex items-center justify-between z-50">
-                <div className="flex items-center gap-4 md:gap-10">
-                    <div className="flex items-center gap-2 md:gap-3">
+            <header className="h-16 border-b border-white/10 bg-[#161B22] px-3 md:px-6 flex items-center justify-between z-[60] relative">
+                <div className="flex items-center gap-2 md:gap-8">
+                    <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 md:w-9 md:h-9 ${accentBg} rounded flex items-center justify-center shadow-[0_0_15px_rgba(0,209,255,0.4)] shrink-0`}>
                             <span className="material-symbols-outlined text-black font-bold text-sm md:text-base">directions_car</span>
                         </div>
                         <div className="min-w-0 flex flex-col">
-                            <span className="text-lg md:text-xl font-extrabold tracking-tighter text-white truncate italic leading-none">Gaadiwala</span>
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${accentText} leading-none mt-1`}>
+                            <span className="text-base md:text-xl font-extrabold tracking-tighter text-white truncate italic leading-none">Gaadiwala</span>
+                            <span className={`hidden sm:block text-[9px] font-black uppercase tracking-widest ${accentText} leading-none mt-1 truncate`}>
                                 {isPink ? '✨ Pink Partner' : 'Partner Central'}
                             </span>
                         </div>
                     </div>
-                    <div className="hidden lg:flex items-center gap-2 bg-white/5 p-1 rounded border border-white/10">
-                        <button
-                            onClick={() => setLang('en')}
-                            className={`px-3 py-1 text-xs font-bold rounded transition-all ${lang === 'en' ? `${accentBg} text-black` : 'text-slate-400'}`}
-                        >
-                            English
-                        </button>
-                        <button
-                            onClick={() => setLang('hi')}
-                            className={`px-3 py-1 text-xs font-bold rounded transition-all ${lang === 'hi' ? `${accentBg} text-black` : 'text-slate-400'}`}
-                        >
-                            हिन्दी
-                        </button>
-                    </div>
                 </div>
 
-                <div className="flex items-center gap-3 md:gap-6">
+                <div className="flex items-center gap-2 md:gap-4">
                     <button
                         onClick={() => setShowStats(!showStats)}
-                        className="lg:hidden size-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#00D1FF]"
+                        className="lg:hidden size-9 md:size-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#00D1FF] hover:bg-white/10 transition-colors"
                     >
-                        <span className="material-symbols-outlined">{showStats ? 'close' : 'bar_chart'}</span>
+                        <span className="material-symbols-outlined text-xl">{showStats ? 'close' : 'bar_chart'}</span>
                     </button>
                     <button
                         onClick={async () => {
@@ -581,26 +584,24 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
                                 alert("Failed to update status");
                             }
                         }}
-                        className={`flex items-center gap-2 border px-3 md:px-4 py-1.5 rounded-full shrink-0 transition-all ${user.isOnline ? 'bg-black/40 border-white/10' : 'bg-red-500/10 border-red-500/20'}`}
+                        className={`flex items-center gap-1.5 md:gap-2 border px-2 md:px-4 py-1.5 rounded-full transition-all ${user.isOnline ? 'bg-black/40 border-white/10' : 'bg-red-500/10 border-red-500/20'}`}
                     >
-                        <div className="flex items-center gap-2">
-                            <span className="relative flex h-2 w-2 md:h-3 md:w-3">
-                                {user.isOnline && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${accentBg} opacity-75`}></span>}
-                                <span className={`relative inline-flex rounded-full h-2 w-2 md:h-3 md:w-3 ${user.isOnline ? accentBg : 'bg-red-500'}`}></span>
-                            </span>
-                            <span className={`text-[10px] font-bold tracking-widest uppercase ${user.isOnline ? accentText : 'text-red-500'}`}>
-                                {user.isOnline ? text.online : 'OFFLINE'}
-                            </span>
-                        </div>
+                        <span className="relative flex h-2 w-2">
+                            {user.isOnline && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${accentBg} opacity-75`}></span>}
+                            <span className={`relative inline-flex rounded-full h-2 w-2 ${user.isOnline ? accentBg : 'bg-red-500'}`}></span>
+                        </span>
+                        <span className={`text-[9px] font-bold tracking-widest uppercase ${user.isOnline ? accentText : 'text-red-500'} ${user.isOnline ? 'block' : 'hidden md:block'}`}>
+                            {user.isOnline ? text.online : 'OFFLINE'}
+                        </span>
                     </button>
                     <div
                         onClick={() => navigate('/driver/profile')}
-                        className="flex items-center gap-2 md:gap-3 cursor-pointer group"
+                        className="flex items-center gap-2 md:gap-3 cursor-pointer group shrink-0"
                     >
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-white flex items-center gap-1 group-hover:text-[#00D1FF] transition-colors">
+                        <div className="text-right hidden lg:block max-w-[120px]">
+                            <p className="text-sm font-bold text-white flex items-center gap-1 group-hover:text-[#00D1FF] transition-colors truncate">
                                 {user.name}
-                                {user.isKycCompleted && <span className="material-symbols-outlined text-[#00D1FF] text-[14px] filled">verified</span>}
+                                {user.isKycCompleted && <span className="material-symbols-outlined text-[#00D1FF] text-[14px] filled shrink-0">verified</span>}
                             </p>
                             <p className={`text-[9px] font-bold uppercase tracking-wider truncate ${tier === 'Gold' ? 'text-amber-400' : tier === 'Silver' ? 'text-slate-300' : 'text-orange-700'}`}>
                                 {tier} Partner
@@ -614,13 +615,21 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
             </header>
 
             <main className="flex-1 flex overflow-hidden relative">
+                {/* Mobile Sidebar Overlay */}
+                {showStats && (
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] lg:hidden"
+                        onClick={() => setShowStats(false)}
+                    />
+                )}
+
                 <aside
                     ref={statsRef}
                     className={`
-                    absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-[#0A0E12] border-r border-white/10 z-40 transform transition-transform duration-300
+                    fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-[#0A0E12] border-r border-white/10 z-[50] transform transition-transform duration-300 ease-out
                     ${showStats ? 'translate-x-0' : '-translate-x-full'}
                     lg:relative lg:translate-x-0
-                    flex flex-col p-4 sm:p-5 gap-4 sm:gap-5 overflow-y-auto pt-safe relative
+                    flex flex-col p-4 sm:p-5 gap-4 sm:gap-5 overflow-y-auto pt-safe
                 `}>
                     <ScrollHint containerRef={statsRef as any} />
                     {/* Earnings Widget */}
@@ -790,7 +799,7 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
                     {/* Replace iframe with MapContainer */}
                     <div className="absolute inset-0 w-full h-full">
                         <MapContainer
-                            center={user.currentLocation}
+                            center={mapCenter || user.currentLocation}
                             pickup={user.currentLocation}
                             drop={activeTrip ? (
                                 activeTrip.status === RideStatus.STARTED ? activeTrip.dropLocation : activeTrip.pickupLocation
@@ -824,21 +833,42 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleNavigate(searchQuery)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleNavigate(searchQuery, false)}
                                 />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => { setSearchQuery(''); setMapCenter(undefined); }}
+                                        className="text-slate-500 hover:text-white transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                )}
                             </div>
                             <button
-                                onClick={() => setShowTraffic(!showTraffic)}
-                                className={`p-2 rounded transition-all ${showTraffic ? 'text-[#00D1FF]' : 'text-slate-500'}`}
-                                title="Toggle Traffic"
+                                onClick={() => handleNavigate(searchQuery, false)}
+                                className={`${accentBg} text-black p-2 rounded-xl transition-transform active:scale-95 shadow-lg group`}
                             >
-                                <span className="material-symbols-outlined font-bold">traffic</span>
+                                <span className="material-symbols-outlined font-black">search</span>
+                            </button>
+                        </div>
+
+                        {/* Quick Action FABs */}
+                        <div className="flex md:flex-col gap-3">
+                            <button
+                                onClick={() => handleNavigate(searchQuery, true)}
+                                className={`size-12 rounded-2xl bg-[#161B22]/95 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center gap-0.5 transition-all shadow-2xl group ${searchQuery ? 'opacity-100 scale-100' : 'opacity-50 scale-90 pointer-events-none'}`}
+                                title="Open in Google Maps"
+                            >
+                                <span className={`material-symbols-outlined text-xl ${accentText} group-hover:scale-110 transition-transform`}>navigation</span>
+                                <span className="text-[7px] font-black uppercase text-slate-500 tracking-tighter">Navigate</span>
                             </button>
                             <button
-                                onClick={() => handleNavigate(searchQuery)}
-                                className={`${accentBg} text-black p-2 rounded transition-transform active:scale-95 shadow-lg`}
+                                onClick={() => setShowTraffic(!showTraffic)}
+                                className={`size-12 rounded-2xl bg-[#161B22]/95 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center gap-0.5 transition-all shadow-2xl group ${showTraffic ? 'border-[#00D1FF]/50 bg-[#00D1FF]/5' : ''}`}
+                                title="Toggle Traffic"
                             >
-                                <span className="material-symbols-outlined font-bold">navigation</span>
+                                <span className={`material-symbols-outlined text-xl ${showTraffic ? accentText : 'text-slate-400'} group-hover:scale-110 transition-transform`}>traffic</span>
+                                <span className={`text-[7px] font-black uppercase tracking-tighter ${showTraffic ? accentText : 'text-slate-500'}`}>Traffic</span>
                             </button>
                         </div>
 

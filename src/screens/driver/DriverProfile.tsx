@@ -31,10 +31,13 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
         languages: user.languages || [] as string[],
     });
 
+    const totalRides = user.totalRides || 0;
+    const tier = totalRides > 50 ? 'Gold' : totalRides > 20 ? 'Silver' : 'Bronze';
+
     const stats = [
         { label: 'Rating', value: user.rating || '4.9', icon: 'star', color: 'text-amber-400' },
-        { label: 'Trips', value: user.totalRides || '124', icon: 'local_taxi', color: 'text-blue-400' },
-        { label: 'Level', value: 'Gold', icon: 'military_tech', color: 'text-amber-500' },
+        { label: 'Trips', value: totalRides, icon: 'local_taxi', color: 'text-blue-400' },
+        { label: 'Level', value: tier, icon: 'military_tech', color: tier === 'Gold' ? 'text-amber-500' : tier === 'Silver' ? 'text-slate-300' : 'text-orange-700' },
     ];
 
     const t = {
@@ -198,7 +201,7 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
     return (
         <div
             ref={scrollRef}
-            className="min-h-dvh bg-[#0A0E12] text-white font-sans p-4 sm:p-6 pb-20 overflow-y-auto relative scroll-smooth animate-in fade-in duration-700"
+            className="h-dvh bg-[#0A0E12] text-white font-sans p-4 sm:p-6 pb-20 overflow-y-auto relative scroll-smooth animate-in fade-in duration-700"
         >
             <ScrollHint containerRef={scrollRef} />
             <header className="max-w-2xl mx-auto flex items-center justify-between mb-8">

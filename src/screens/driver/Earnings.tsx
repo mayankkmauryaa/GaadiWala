@@ -4,35 +4,12 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid, YA
 import DriverPricingSlider from '../../components/Driver/DriverPricingSlider';
 import { Trip, User, Language, VehicleCategory } from '../../types';
 import ScrollHint from '../../components/shared/ScrollHint';
+import { ridesAPI } from '../../services/api/rides';
 
 interface Props {
     user: User;
     lang: Language;
 }
-
-const chartData = [
-    { day: 'Mon', val: 4500, date: 'Oct 20' },
-    { day: 'Tue', val: 5200, date: 'Oct 21' },
-    { day: 'Wed', val: 3800, date: 'Oct 22' },
-    { day: 'Thu', val: 6100, date: 'Oct 23' },
-    { day: 'Fri', val: 4800, date: 'Oct 24' },
-    { day: 'Sat', val: 8200, date: 'Oct 25' },
-    { day: 'Sun', val: 7500, date: 'Oct 26' },
-];
-
-const withdrawalHistory = [
-    { id: 'WD-101', date: 'Oct 24, 2024', amount: 5000, method: 'Bank Transfer', status: 'Completed' },
-    { id: 'WD-102', date: 'Oct 20, 2024', amount: 2500, method: 'PayPal', status: 'Completed' },
-    { id: 'WD-103', date: 'Oct 15, 2024', amount: 12000, method: 'Direct Deposit', status: 'Completed' },
-    { id: 'WD-104', date: 'Oct 10, 2024', amount: 4500, method: 'Bank Transfer', status: 'Completed' },
-];
-
-const tripHistory: Trip[] = [
-    { id: 'CR-2931', date: 'Oct 26, 10:30 AM', pickup: 'Mathura Junction', destination: 'Vrindavan Gate', fare: 450, status: 'COMPLETED', rating: 5, category: VehicleCategory.MINI },
-    { id: 'CR-2930', date: 'Oct 26, 09:15 AM', pickup: 'Govardhan', destination: 'Radha Kund', fare: 320, status: 'COMPLETED', rating: 4, category: VehicleCategory.AUTO },
-    { id: 'CR-2928', date: 'Oct 25, 06:45 PM', pickup: 'City Centre', destination: 'Civil Lines', fare: 150, status: 'CANCELLED', category: VehicleCategory.BIKE },
-    { id: 'CR-2925', date: 'Oct 25, 02:00 PM', pickup: 'Highway Plaza', destination: 'Krishna Nagar', fare: 210, status: 'COMPLETED', rating: 5, category: VehicleCategory.MINI },
-];
 
 const CustomTooltip = ({ active, payload, accentColor }: any) => {
     if (active && payload && payload.length) {
@@ -54,8 +31,10 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
     const navigate = useNavigate();
     const mainScrollRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState<'earnings' | 'history'>('earnings');
-    const [realTimeEarnings, setRealTimeEarnings] = useState(12450.00);
+    const [realTimeEarnings, setRealTimeEarnings] = useState(0);
     const [payoutMethod, setPayoutMethod] = useState<'bank' | 'paypal' | 'deposit'>('bank');
+    const [trips, setTrips] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const isPink = user.vehicleType === VehicleCategory.PINK;
     const accentBg = isPink ? 'bg-pink-500' : 'bg-[#00D1FF]';
@@ -64,15 +43,58 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
     const accentShadow = isPink ? 'shadow-[0_0_20px_rgba(244,114,182,0.3)]' : 'shadow-[0_0_20px_rgba(0,209,255,0.3)]';
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setRealTimeEarnings(prev => prev + (Math.random() > 0.8 ? Math.random() * 8 : 0));
-        }, 4000);
-        return () => clearInterval(interval);
-    }, []);
+        const fetchHistory = async () => {
+            try {
+                const history = await ridesAPI.getDriverRideHistory(user.id);
+                setTrips(history);
+                const total = history.reduce((sum, ride) => sum + (ride.estimatedFare || 0), 0);
+                setRealTimeEarnings(total);
+            } catch (error) {
+                console.error("Failed to fetch earnings history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, [user.id]);
+
+    // Derived chart data from last 7 days of completed trips
+    const getChartData = () => {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const chartDataMap = new Map();
+
+        // Initialize last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dayName = days[date.getDay()];
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            chartDataMap.set(dateStr, { day: dayName, val: 0, date: dateStr });
+        }
+
+        trips.forEach(trip => {
+            const date = trip.createdAt instanceof Date ? trip.createdAt : new Date(trip.createdAt);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (chartDataMap.has(dateStr)) {
+                const existing = chartDataMap.get(dateStr);
+                chartDataMap.set(dateStr, { ...existing, val: existing.val + (trip.estimatedFare || 0) });
+            }
+        });
+
+        return Array.from(chartDataMap.values());
+    };
+
+    const chartData = getChartData();
 
     const milestones = [
-        { label: 'Weekly Goal', current: 12450, target: 15000, icon: 'military_tech' },
-        { label: 'Trip Target', current: 124, target: 150, icon: 'local_taxi' },
+        { label: 'Weekly Goal', current: realTimeEarnings, target: Math.max(15000, realTimeEarnings + 5000), icon: 'military_tech' },
+        { label: 'Trip Target', current: trips.length, target: Math.max(150, trips.length + 20), icon: 'local_taxi' },
+    ];
+
+    // Mock settlements - as these would come from a different collection/logic
+    const withdrawalHistory = [
+        { id: 'WD-PREV', date: 'Last Month', amount: 0, method: 'Automatic', status: 'Completed' },
     ];
 
     return (
@@ -119,7 +141,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs font-black">₹{m.current.toLocaleString()}</p>
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase">Target: ₹{m.target.toLocaleString()}</p>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase">Target: {m.target.toLocaleString()}</p>
                                 </div>
                             </div>
                             <div className="space-y-1">
@@ -127,7 +149,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <div
                                         className={`${accentBg} h-full rounded-full transition-all duration-1000`}
-                                        style={{ width: `${(m.current / m.target) * 100}%` }}
+                                        style={{ width: `${Math.min(100, (m.current / m.target) * 100)}%` }}
                                     ></div>
                                 </div>
                             </div>
@@ -140,7 +162,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                         <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl opacity-5">celebration</span>
                         <h4 className="text-xs font-black text-orange-500 uppercase tracking-widest mb-1">Weekly Bonus</h4>
                         <p className="text-lg font-black text-white italic">₹2,500 Extra</p>
-                        <p className="text-[9px] text-slate-400 mt-2 font-medium">Complete 25 more rides by Sunday night to unlock.</p>
+                        <p className="text-[9px] text-slate-400 mt-2 font-medium">Earn more reaching targets consistently.</p>
                     </div>
                 </div>
             </aside>
@@ -151,7 +173,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                 className="flex-1 p-4 sm:p-6 lg:p-12 h-[60dvh] lg:h-full overflow-y-auto relative"
             >
                 <ScrollHint containerRef={mainScrollRef} />
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className={`material-symbols-outlined ${accentText} text-sm`}>verified</span>
@@ -169,7 +191,50 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                     </div>
                 </header>
 
-                {activeTab === 'earnings' ? (
+                {!loading && activeTab === 'earnings' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div className="bg-[#161B22] p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                            <div className={`absolute top-0 right-0 p-4 ${accentText} opacity-10 group-hover:opacity-20 transition-opacity`}>
+                                <span className="material-symbols-outlined text-4xl">payments</span>
+                            </div>
+                            <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1">Today's Earnings</p>
+                            <h3 className="text-3xl font-black text-white">₹{
+                                trips.filter(t => {
+                                    const date = t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt);
+                                    return date.toDateString() === new Date().toDateString();
+                                }).reduce((acc, curr) => acc + (curr.estimatedFare || 0), 0)
+                            }</h3>
+                        </div>
+                        <div className="bg-[#161B22] p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                            <div className={`absolute top-0 right-0 p-4 ${accentText} opacity-10 group-hover:opacity-20 transition-opacity`}>
+                                <span className="material-symbols-outlined text-4xl">local_taxi</span>
+                            </div>
+                            <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1">Total Trips</p>
+                            <h3 className="text-3xl font-black text-white">{
+                                trips.filter(t => {
+                                    const date = t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt);
+                                    return date.toDateString() === new Date().toDateString();
+                                }).length
+                            } Rides</h3>
+                        </div>
+                        <div className="bg-[#161B22] p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group">
+                            <div className={`absolute top-0 right-0 p-4 ${accentText} opacity-10 group-hover:opacity-20 transition-opacity`}>
+                                <span className="material-symbols-outlined text-4xl">trending_up</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Forecast (4h)</p>
+                                <span className={`${accentText} text-[9px] font-black uppercase`}>Live</span>
+                            </div>
+                            <h3 className="text-3xl font-black text-white">~₹200</h3>
+                        </div>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className={`size-12 border-4 ${accentBorder} border-t-transparent rounded-full animate-spin`}></div>
+                    </div>
+                ) : activeTab === 'earnings' ? (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Wallet Section */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -181,7 +246,6 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Total Balance</p>
                                     <div className="flex items-baseline gap-2">
                                         <h3 className="text-6xl md:text-7xl font-black italic tracking-tighter">₹{realTimeEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-                                        <span className="text-green-500 text-sm font-black uppercase bg-green-500/10 px-2 py-1 rounded-lg">+₹12.50</span>
                                     </div>
 
                                     <div className="mt-12 space-y-6">
@@ -238,7 +302,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                             <div className="flex items-center justify-between mb-12">
                                 <div>
                                     <h3 className="text-xl font-black tracking-tight text-white mb-1 uppercase italic">Weekly Forensics</h3>
-                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Oct 20 - Oct 26 Performance</p>
+                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Performance Insights</p>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2"><div className={`size-2 rounded-full ${accentBg}`}></div><span className="text-[10px] font-black uppercase text-slate-300">Net Revenue</span></div>
@@ -296,7 +360,9 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                                 <td className="px-6 py-6 text-sm font-black text-white italic">₹{item.amount.toLocaleString()}</td>
                                                 <td className="px-6 py-6 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors cursor-pointer">{item.method}</td>
                                                 <td className="px-10 py-6 text-right">
-                                                    <span className="px-3 py-1 bg-green-500/10 text-green-500 font-black rounded-lg text-[10px] uppercase border border-green-500/20">Success</span>
+                                                    <span className={`px-3 py-1 ${item.amount > 0 ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-white/5 text-slate-500 border-white/10'} font-black rounded-lg text-[10px] uppercase border`}>
+                                                        {item.amount > 0 ? 'Success' : 'NA'}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -310,7 +376,7 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                         <div className="px-10 py-8 border-b border-white/5 flex justify-between items-center">
                             <h3 className="text-xs font-black uppercase tracking-[0.2em]">Partner Log</h3>
                             <div className="flex gap-2">
-                                <div className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase text-slate-400 border border-white/10">All Trips</div>
+                                <div className="px-3 py-1 bg-white/5 rounded-full text-[10px] font-black uppercase text-slate-400 border border-white/10">All Trips ({trips.length})</div>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -326,40 +392,42 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/2">
-                                    {tripHistory.map(trip => (
+                                    {trips.map(trip => (
                                         <tr key={trip.id} className="hover:bg-white/5 transition-all group">
                                             <td className="px-10 py-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`size-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 group-hover:${accentText} transition-colors`}>
                                                         <span className="material-symbols-outlined text-[18px]">
-                                                            {trip.category === VehicleCategory.BIKE ? 'motorcycle' :
-                                                                trip.category === VehicleCategory.AUTO ? 'rickshaw' : 'directions_car'}
+                                                            {trip.vehicleType === VehicleCategory.BIKE ? 'motorcycle' :
+                                                                trip.vehicleType === VehicleCategory.AUTO ? 'rickshaw' : 'directions_car'}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs font-black text-white">{trip.id}</span>
+                                                    <span className="text-xs font-black text-white">{trip.id.substring(0, 8).toUpperCase()}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-6 text-xs font-bold text-slate-400">{trip.date}</td>
+                                            <td className="px-6 py-6 text-xs font-bold text-slate-400">
+                                                {trip.createdAt instanceof Date ? trip.createdAt.toLocaleDateString() : '---'}
+                                            </td>
                                             <td className="px-6 py-6">
                                                 <div className="flex flex-col gap-1.5">
                                                     <div className="flex items-center gap-2">
                                                         <div className="size-1.5 rounded-full bg-green-500"></div>
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-tighter">{trip.pickup}</span>
+                                                        <span className="text-[10px] font-black text-white uppercase tracking-tighter truncate max-w-[150px]">{trip.pickupAddress}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <div className="size-1.5 rounded-full bg-orange-500 animate-pulse"></div>
-                                                        <span className="text-[10px] font-black text-white uppercase tracking-tighter">{trip.destination}</span>
+                                                        <span className="text-[10px] font-black text-white uppercase tracking-tighter truncate max-w-[150px]">{trip.dropAddress}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6 text-center">
                                                 <div className="flex justify-center gap-0.5">
                                                     {[...Array(5)].map((_, i) => (
-                                                        <span key={i} className={`material-symbols-outlined text-[10px] ${(trip.rating || 0) > i ? 'text-amber-400' : 'text-slate-800'}`}>star</span>
+                                                        <span key={i} className={`material-symbols-outlined text-[10px] ${(trip.rating || 5) > i ? 'text-amber-400' : 'text-slate-800'}`}>star</span>
                                                     ))}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-6 text-right text-sm font-black text-white italic">₹{trip.fare}</td>
+                                            <td className="px-6 py-6 text-right text-sm font-black text-white italic">₹{trip.estimatedFare}</td>
                                             <td className="px-10 py-6 text-right">
                                                 <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase border ${trip.status === 'COMPLETED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
                                                     {trip.status}
@@ -367,6 +435,11 @@ const Earnings: React.FC<Props> = ({ user, lang }) => {
                                             </td>
                                         </tr>
                                     ))}
+                                    {trips.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-10 py-12 text-center text-slate-500 font-bold uppercase tracking-widest">No trip history found</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

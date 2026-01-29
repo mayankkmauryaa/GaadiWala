@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { RideType, VehicleCategory, ScheduledRide, PaymentMethod, RideStatus, RidePreferences, PromoCode, PreferredRoute } from '../../types';
 import { useRide } from '../../hooks/useRide';
 import { useAuth } from '../../context/AuthContext';
@@ -336,7 +337,7 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                         <p className="text-[6px] lg:text-[8px] font-bold uppercase tracking-widest text-[#22c55e] mt-0.5">Live Booking</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 pr-20">
                     <button onClick={() => navigate(-1)} className="text-[10px] lg:text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-all">Cancel</button>
                     <div className="w-16 lg:w-20"></div> {/* Spacer for global menu pill */}
                 </div>
@@ -352,7 +353,12 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                     />
 
                     {/* Desktop Trip Details Overlay */}
-                    <div className="absolute bottom-10 left-10 p-6 rounded-3xl bg-white shadow-xl border border-slate-100 w-80 hidden lg:block z-50">
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+                        className="absolute bottom-10 left-10 p-6 rounded-3xl bg-white shadow-xl border border-slate-100 w-80 hidden lg:block z-50"
+                    >
                         <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Trip Summary</h4>
                         {isFetchingForensics ? (
                             <div className="text-center space-y-2 py-6">
@@ -369,7 +375,7 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
 
                 <aside
@@ -392,203 +398,239 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                             </div>
                         </div>
                     )}
-                    {step === 'BIDDING' && (
-                        <div className="animate-in slide-in-from-right duration-500 flex flex-col h-full">
-                            <div className="bg-white/5 p-4 rounded-2xl mb-4 border border-white/5">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-slate-400">group</span>
-                                        <span className="text-[10px] font-bold uppercase text-slate-400">Passengers</span>
+                    <AnimatePresence mode="wait">
+                        {step === 'BIDDING' && (
+                            <motion.div
+                                key="bidding"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col h-full"
+                            >
+                                <div className="bg-white/5 p-4 rounded-2xl mb-4 border border-white/5">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-slate-400">group</span>
+                                            <span className="text-[10px] font-bold uppercase text-slate-400">Passengers</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    if (passengerCount > 1) {
+                                                        const perPerson = initialFare / passengerCount;
+                                                        setInitialFare(perPerson * (passengerCount - 1));
+                                                        setBid((prev: number) => Math.round((prev / passengerCount) * (passengerCount - 1)));
+                                                        setPassengerCount((prev: number) => prev - 1);
+                                                    }
+                                                }}
+                                                disabled={passengerCount <= 1}
+                                                className={`size-8 rounded-full flex items-center justify-center border transition-all ${passengerCount <= 1 ? 'border-white/5 text-slate-600' : 'border-white/20 text-white hover:bg-white/10'}`}
+                                            >
+                                                <span className="material-symbols-outlined text-sm">remove</span>
+                                            </button>
+                                            <span className="text-white font-bold">{passengerCount}</span>
+                                            <button
+                                                onClick={() => {
+                                                    const limits: Record<string, number> = {
+                                                        [VehicleCategory.BIKE]: 1,
+                                                        [VehicleCategory.AUTO]: 3,
+                                                        [VehicleCategory.MINI]: 4,
+                                                        [VehicleCategory.PRIME]: 4,
+                                                        [VehicleCategory.PINK]: 4
+                                                    };
+                                                    const max = limits[category] || 4;
+                                                    if (passengerCount < max) {
+                                                        const perPerson = initialFare / passengerCount;
+                                                        setInitialFare(perPerson * (passengerCount + 1));
+                                                        setBid((prev: number) => Math.round((prev / passengerCount) * (passengerCount + 1)));
+                                                        setPassengerCount((prev: number) => prev + 1);
+                                                    }
+                                                }}
+                                                disabled={(() => {
+                                                    const limits: Record<string, number> = {
+                                                        [VehicleCategory.BIKE]: 1,
+                                                        [VehicleCategory.AUTO]: 3,
+                                                        [VehicleCategory.MINI]: 4,
+                                                        [VehicleCategory.PRIME]: 4,
+                                                        [VehicleCategory.PINK]: 4
+                                                    };
+                                                    return passengerCount >= (limits[category] || 4);
+                                                })()}
+                                                className="size-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-all disabled:opacity-50"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">add</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={() => {
-                                                if (passengerCount > 1) {
-                                                    const perPerson = initialFare / passengerCount;
-                                                    setInitialFare(perPerson * (passengerCount - 1));
-                                                    setBid((prev: number) => Math.round((prev / passengerCount) * (passengerCount - 1)));
-                                                    setPassengerCount((prev: number) => prev - 1);
+                                </div>
+
+                                <h3 className="text-sm lg:text-xl font-black tracking-tight mb-4 lg:mb-8 shrink-0 text-white uppercase italic">Offer Your Fare</h3>
+
+                                <div className="bg-white/5 p-4 lg:p-8 rounded-2xl lg:rounded-[2rem] border border-white/5 relative shadow-sm mb-4 lg:mb-8 shrink-0 overflow-hidden">
+                                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#22c55e]/30 to-transparent"></div>
+
+                                    <div className="flex flex-col items-center mb-6 lg:mb-8">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <p className="text-[10px] lg:text-[12px] font-black uppercase text-slate-500 tracking-widest italic">Your Offer</p>
+                                            <button onClick={() => setShowBreakdown(true)} className="size-4 lg:size-5 rounded-full border border-white/20 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/40 transition-all">
+                                                <span className="material-symbols-outlined text-[10px] lg:text-[12px]">info</span>
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-1 scale-110 lg:scale-125">
+                                            <span className="text-xl lg:text-4xl font-black text-[#22c55e]">₹</span>
+                                            <motion.input
+                                                whileFocus={{ scale: 1.1 }}
+                                                type="number"
+                                                value={bid}
+                                                onChange={(e) => setBid(Number(e.target.value))}
+                                                className="bg-transparent text-2xl lg:text-5xl font-black text-white w-32 lg:w-48 focus:outline-none text-center tabular-nums"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Premium Scrollable Fare Selection */}
+                                    <div className="relative mb-6">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">Slide to adjust bid</p>
+                                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x px-4">
+                                            {(() => {
+                                                const steps = [];
+                                                const base = initialFare || 250;
+                                                // Generate values from -40% to +40% in 5% increments
+                                                for (let i = -8; i <= 8; i++) {
+                                                    steps.push(Math.round(base * (1 + (i * 0.05))));
                                                 }
-                                            }}
-                                            disabled={passengerCount <= 1}
-                                            className={`size-8 rounded-full flex items-center justify-center border transition-all ${passengerCount <= 1 ? 'border-white/5 text-slate-600' : 'border-white/20 text-white hover:bg-white/10'}`}
-                                        >
-                                            <span className="material-symbols-outlined text-sm">remove</span>
-                                        </button>
-                                        <span className="text-white font-bold">{passengerCount}</span>
-                                        <button
-                                            onClick={() => {
-                                                const limits: Record<string, number> = {
-                                                    [VehicleCategory.BIKE]: 1,
-                                                    [VehicleCategory.AUTO]: 3,
-                                                    [VehicleCategory.MINI]: 4,
-                                                    [VehicleCategory.PRIME]: 4,
-                                                    [VehicleCategory.PINK]: 4
-                                                };
-                                                const max = limits[category] || 4;
-                                                if (passengerCount < max) {
-                                                    const perPerson = initialFare / passengerCount;
-                                                    setInitialFare(perPerson * (passengerCount + 1));
-                                                    setBid((prev: number) => Math.round((prev / passengerCount) * (passengerCount + 1)));
-                                                    setPassengerCount((prev: number) => prev + 1);
-                                                }
-                                            }}
-                                            disabled={(() => {
-                                                const limits: Record<string, number> = {
-                                                    [VehicleCategory.BIKE]: 1,
-                                                    [VehicleCategory.AUTO]: 3,
-                                                    [VehicleCategory.MINI]: 4,
-                                                    [VehicleCategory.PRIME]: 4,
-                                                    [VehicleCategory.PINK]: 4
-                                                };
-                                                return passengerCount >= (limits[category] || 4);
+                                                return steps.map((val) => (
+                                                    <motion.button
+                                                        key={val}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        onClick={() => setBid(val)}
+                                                        className={`snap-center shrink-0 min-w-[80px] py-4 rounded-xl border transition-all flex flex-col items-center gap-1 ${bid === val
+                                                            ? 'bg-[#22c55e] border-[#22c55e] text-black shadow-lg shadow-[#22c55e]/20 scale-110'
+                                                            : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                                                            }`}
+                                                    >
+                                                        <span className="text-[12px] font-black">₹{val}</span>
+                                                        <span className="text-[8px] font-bold opacity-50 uppercase">
+                                                            {val === base ? 'STD' : val > base ? `+${Math.round((val / base - 1) * 100)}%` : `-${Math.round((1 - val / base) * 100)}%`}
+                                                        </span>
+                                                    </motion.button>
+                                                ));
                                             })()}
-                                            className="size-8 rounded-full flex items-center justify-center border border-white/20 text-white hover:bg-white/10 transition-all disabled:opacity-50"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">add</span>
-                                        </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <h3 className="text-sm lg:text-xl font-black tracking-tight mb-4 lg:mb-8 shrink-0 text-white uppercase italic">Offer Your Fare</h3>
-
-                            <div className="bg-white/5 p-4 lg:p-8 rounded-2xl lg:rounded-[2rem] border border-white/5 relative shadow-sm mb-4 lg:mb-8 shrink-0 overflow-hidden">
-                                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[#22c55e]/30 to-transparent"></div>
-
-                                <div className="flex flex-col items-center mb-6 lg:mb-8">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <p className="text-[10px] lg:text-[12px] font-black uppercase text-slate-500 tracking-widest italic">Your Offer</p>
-                                        <button onClick={() => setShowBreakdown(true)} className="size-4 lg:size-5 rounded-full border border-white/20 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/40 transition-all">
-                                            <span className="material-symbols-outlined text-[10px] lg:text-[12px]">info</span>
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center gap-1 scale-110 lg:scale-125">
-                                        <span className="text-xl lg:text-4xl font-black text-[#22c55e]">₹</span>
-                                        <input
-                                            type="number"
-                                            value={bid}
-                                            onChange={(e) => setBid(Number(e.target.value))}
-                                            className="bg-transparent text-2xl lg:text-5xl font-black text-white w-32 lg:w-48 focus:outline-none text-center tabular-nums"
-                                        />
+                                    <div className="flex justify-center gap-6 text-[9px] font-black uppercase tracking-widest mt-2 border-t border-white/5 pt-6">
+                                        <button onClick={() => setBid(Math.round(initialFare * 0.85))} className="text-slate-500 hover:text-white transition-colors">Min</button>
+                                        <button onClick={() => setBid(initialFare)} className="text-[#22c55e] px-6 py-1.5 bg-[#22c55e]/10 rounded-full border border-[#22c55e]/30 hover:bg-[#22c55e]/20 transition-all">Standard</button>
+                                        <button onClick={() => setBid(Math.round(initialFare * 1.3))} className="text-slate-500 hover:text-white transition-colors">Max</button>
                                     </div>
                                 </div>
 
-                                {/* Premium Scrollable Fare Selection */}
-                                <div className="relative mb-6">
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">Slide to adjust bid</p>
-                                    <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide snap-x px-4">
-                                        {(() => {
-                                            const steps = [];
-                                            const base = initialFare || 250;
-                                            // Generate values from -40% to +40% in 5% increments
-                                            for (let i = -8; i <= 8; i++) {
-                                                steps.push(Math.round(base * (1 + (i * 0.05))));
-                                            }
-                                            return steps.map((val) => (
-                                                <button
-                                                    key={val}
-                                                    onClick={() => setBid(val)}
-                                                    className={`snap-center shrink-0 min-w-[80px] py-4 rounded-xl border transition-all flex flex-col items-center gap-1 ${bid === val
-                                                        ? 'bg-[#22c55e] border-[#22c55e] text-black shadow-lg shadow-[#22c55e]/20 scale-110'
-                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
-                                                        }`}
-                                                >
-                                                    <span className="text-[12px] font-black">₹{val}</span>
-                                                    <span className="text-[8px] font-bold opacity-50 uppercase">
-                                                        {val === base ? 'STD' : val > base ? `+${Math.round((val / base - 1) * 100)}%` : `-${Math.round((1 - val / base) * 100)}%`}
-                                                    </span>
-                                                </button>
-                                            ));
-                                        })()}
+                                {/* Preferences - More compact for mobile */}
+                                <div className="bg-white/5 p-4 lg:p-6 rounded-2xl lg:rounded-3xl border border-white/5 mb-6 lg:mb-8 shrink-0 backdrop-blur-sm">
+                                    <p className="text-[7px] lg:text-[10px] font-black uppercase text-slate-500 mb-3 lg:mb-4 tracking-widest">Active Preferences</p>
+                                    <div className="flex gap-4">
+                                        <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.silent ? 'text-[#22c55e]' : 'text-slate-500'}`}>
+                                            <span className="material-symbols-outlined text-xs lg:text-sm">volume_off</span> Silent
+                                        </div>
+                                        <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.ac ? 'text-[#22c55e]' : 'text-slate-500'}`}>
+                                            <span className="material-symbols-outlined text-xs lg:text-sm">ac_unit</span> AC
+                                        </div>
+                                        <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.music ? 'text-[#22c55e]' : 'text-slate-500'}`}>
+                                            <span className="material-symbols-outlined text-xs lg:text-sm">music_note</span> Music
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-center gap-6 text-[9px] font-black uppercase tracking-widest mt-2 border-t border-white/5 pt-6">
-                                    <button onClick={() => setBid(Math.round(initialFare * 0.85))} className="text-slate-500 hover:text-white transition-colors">Min</button>
-                                    <button onClick={() => setBid(initialFare)} className="text-[#22c55e] px-6 py-1.5 bg-[#22c55e]/10 rounded-full border border-[#22c55e]/30 hover:bg-[#22c55e]/20 transition-all">Standard</button>
-                                    <button onClick={() => setBid(Math.round(initialFare * 1.3))} className="text-slate-500 hover:text-white transition-colors">Max</button>
-                                </div>
-                            </div>
-
-                            {/* Preferences - More compact for mobile */}
-                            <div className="bg-white/5 p-4 lg:p-6 rounded-2xl lg:rounded-3xl border border-white/5 mb-6 lg:mb-8 shrink-0 backdrop-blur-sm">
-                                <p className="text-[7px] lg:text-[10px] font-black uppercase text-slate-500 mb-3 lg:mb-4 tracking-widest">Active Preferences</p>
-                                <div className="flex gap-4">
-                                    <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.silent ? 'text-[#22c55e]' : 'text-slate-500'}`}>
-                                        <span className="material-symbols-outlined text-xs lg:text-sm">volume_off</span> Silent
-                                    </div>
-                                    <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.ac ? 'text-[#22c55e]' : 'text-slate-500'}`}>
-                                        <span className="material-symbols-outlined text-xs lg:text-sm">ac_unit</span> AC
-                                    </div>
-                                    <div className={`flex items-center gap-2 text-[10px] lg:text-xs font-bold ${preferences.music ? 'text-[#22c55e]' : 'text-slate-500'}`}>
-                                        <span className="material-symbols-outlined text-xs lg:text-sm">music_note</span> Music
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setStep('PAYMENT')}
-                                disabled={isLoading || isFetchingForensics}
-                                className="w-full h-14 sm:h-16 bg-[#22c55e] text-black rounded-xl lg:rounded-[2rem] font-black text-[10px] sm:text-xs lg:text-xs uppercase tracking-widest shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 lg:gap-4 mt-auto shrink-0"
-                            >
-                                Proceed to Payment <span className="material-symbols-outlined text-sm sm:text-base">payments</span>
-                            </button>
-                            <button
-                                onClick={findDrivers}
-                                className="w-full mt-4 text-[9px] font-black uppercase text-slate-500 hover:text-white transition-colors tracking-widest"
-                            >
-                                Or View Available Partners
-                            </button>
-                        </div>
-                    )}
-
-                    {step === 'DRIVERS' && (
-                        <div className="animate-in slide-in-from-right duration-500 flex flex-col h-full">
-                            <div className="flex items-center justify-between mb-4 lg:mb-8 shrink-0">
-                                <button onClick={() => { setStep('BIDDING'); setError(null); }} className="size-8 lg:size-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white border border-white/5">
-                                    <span className="material-symbols-outlined text-xs lg:text-sm">arrow_back</span>
+                                <motion.button
+                                    onClick={() => setStep('PAYMENT')}
+                                    disabled={isLoading || isFetchingForensics}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    animate={{
+                                        boxShadow: ["0px 0px 0px rgba(34,197,94,0)", "0px 0px 20px rgba(34,197,94,0.3)", "0px 0px 0px rgba(34,197,94,0)"]
+                                    }}
+                                    transition={{
+                                        boxShadow: { duration: 2, repeat: Infinity }
+                                    }}
+                                    className="w-full h-14 sm:h-16 bg-[#22c55e] text-black rounded-xl lg:rounded-[2rem] font-black text-[10px] sm:text-xs lg:text-xs uppercase tracking-widest shadow-2xl flex items-center justify-center gap-3 lg:gap-4 mt-auto shrink-0"
+                                >
+                                    Proceed to Payment <span className="material-symbols-outlined text-sm sm:text-base">payments</span>
+                                </motion.button>
+                                <button
+                                    onClick={findDrivers}
+                                    className="w-full mt-4 text-[9px] font-black uppercase text-slate-500 hover:text-white transition-colors tracking-widest"
+                                >
+                                    Or View Available Partners
                                 </button>
-                                <h3 className="text-xl lg:text-2xl font-black tracking-tight text-white">Available Drivers</h3>
-                            </div>
-                            <div className="flex-1 space-y-3 lg:space-y-4 overflow-y-auto pr-2 scrollbar-hide">
-                                {availableDrivers.length > 0 ? availableDrivers.map(driver => (
-                                    <div key={driver.id} className="bg-white/5 border border-white/10 rounded-2xl lg:rounded-3xl p-3 lg:p-5 shadow-sm hover:shadow-[0_0_20px_rgba(34,197,94,0.1)] hover:border-[#22c55e]/30 transition-all relative group backdrop-blur-md">
-                                        <div className="flex gap-3 lg:gap-4">
-                                            <img src={driver.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${driver.id}`} className="size-12 lg:size-16 rounded-xl lg:rounded-2xl object-cover bg-slate-800 border border-white/10" alt="avatar" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="min-w-0">
-                                                        <h4 className="font-black text-xs lg:text-lg truncate tracking-tight uppercase italic text-white">{driver.name}</h4>
-                                                        <div className="flex items-center gap-1 text-[8px] lg:text-[10px] text-slate-400 font-bold uppercase truncate">
-                                                            <span>{driver.carModel}</span> • <span className="text-[#22c55e]">{driver.rating} ★</span>
+                            </motion.div>
+                        )}
+
+                        {step === 'DRIVERS' && (
+                            <motion.div
+                                key="drivers"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col h-full"
+                            >
+                                <div className="flex items-center justify-between mb-4 lg:mb-8 shrink-0">
+                                    <button onClick={() => { setStep('BIDDING'); setError(null); }} className="size-8 lg:size-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white border border-white/5">
+                                        <span className="material-symbols-outlined text-xs lg:text-sm">arrow_back</span>
+                                    </button>
+                                    <h3 className="text-xl lg:text-2xl font-black tracking-tight text-white">Available Drivers</h3>
+                                </div>
+                                <div className="flex-1 space-y-3 lg:space-y-4 overflow-y-auto pr-2 scrollbar-hide">
+                                    {availableDrivers.length > 0 ? availableDrivers.map((driver, index) => (
+                                        <motion.div
+                                            key={driver.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="bg-white/5 border border-white/10 rounded-2xl lg:rounded-3xl p-3 lg:p-5 shadow-sm hover:shadow-[0_0_20px_rgba(34,197,94,0.1)] hover:border-[#22c55e]/30 transition-all relative group backdrop-blur-md"
+                                        >
+                                            <div className="flex gap-3 lg:gap-4">
+                                                <img src={driver.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${driver.id}`} className="size-12 lg:size-16 rounded-xl lg:rounded-2xl object-cover bg-slate-800 border border-white/10" alt="avatar" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="min-w-0">
+                                                            <h4 className="font-black text-xs lg:text-lg truncate tracking-tight uppercase italic text-white">{driver.name}</h4>
+                                                            <div className="flex items-center gap-1 text-[8px] lg:text-[10px] text-slate-400 font-bold uppercase truncate">
+                                                                <span>{driver.carModel}</span> • <span className="text-[#22c55e]">{driver.rating} ★</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-sm lg:text-xl font-black text-white italic leading-none">₹{driver.price}</p>
-                                                        <p className="text-[7px] lg:text-[9px] text-slate-500 font-black uppercase tracking-tighter mt-1 italic">{driver.eta}</p>
+                                                        <div className="text-right">
+                                                            <p className="text-sm lg:text-xl font-black text-white italic leading-none">₹{driver.price}</p>
+                                                            <p className="text-[7px] lg:text-[9px] text-slate-500 font-black uppercase tracking-tighter mt-1 italic">{driver.eta}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div className="mt-3 flex gap-2">
+                                                <button onClick={() => setViewingProfile(driver)} className="flex-1 py-2 rounded-lg bg-white/5 text-slate-400 text-[8px] lg:text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all border border-white/5">Profile</button>
+                                                <button onClick={() => { setSelectedDriver(driver); setStep('PAYMENT'); }} className="flex-2 py-2 rounded-lg bg-[#22c55e] text-black text-[8px] lg:text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all italic px-4 shadow-[0_0_10px_rgba(34,197,94,0.2)]">Select Partner</button>
+                                            </div>
+                                        </motion.div>
+                                    )) : (
+                                        <div className="text-center py-10 lg:py-20 bg-white/5 rounded-2xl lg:rounded-3xl border border-dashed border-white/10">
+                                            <span className="material-symbols-outlined text-3xl lg:text-4xl text-slate-600 mb-2">person_off</span>
+                                            <p className="text-[10px] lg:text-xs text-slate-500 font-bold uppercase tracking-widest">No partners online</p>
                                         </div>
-                                        <div className="mt-3 flex gap-2">
-                                            <button onClick={() => setViewingProfile(driver)} className="flex-1 py-2 rounded-lg bg-white/5 text-slate-400 text-[8px] lg:text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all border border-white/5">Profile</button>
-                                            <button onClick={() => { setSelectedDriver(driver); setStep('PAYMENT'); }} className="flex-2 py-2 rounded-lg bg-[#22c55e] text-black text-[8px] lg:text-[10px] font-black uppercase tracking-widest hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all italic px-4 shadow-[0_0_10px_rgba(34,197,94,0.2)]">Select Partner</button>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="text-center py-10 lg:py-20 bg-white/5 rounded-2xl lg:rounded-3xl border border-dashed border-white/10">
-                                        <span className="material-symbols-outlined text-3xl lg:text-4xl text-slate-600 mb-2">person_off</span>
-                                        <p className="text-[10px] lg:text-xs text-slate-500 font-bold uppercase tracking-widest">No partners online</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {
-                        step === 'PAYMENT' && (
-                            <div className="animate-in slide-in-from-right duration-500 flex flex-col h-full">
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                        {step === 'PAYMENT' && (
+                            <motion.div
+                                key="payment"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col h-full"
+                            >
                                 <div className="flex items-center gap-2 mb-6">
                                     <button onClick={() => { setStep(selectedDriver ? 'DRIVERS' : 'BIDDING'); setError(null); }} className="size-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-white">
                                         <span className="material-symbols-outlined text-sm">arrow_back</span>
@@ -688,12 +730,17 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                                         )}
                                     </button>
                                 </div>
-                            </div>
-                        )
-                    }
-                    {
-                        step === 'WAITING' && (
-                            <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center justify-center h-full text-center space-y-8">
+                            </motion.div>
+                        )}
+                        {step === 'WAITING' && (
+                            <motion.div
+                                key="waiting"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.1 }}
+                                transition={{ duration: 0.5 }}
+                                className="flex flex-col items-center justify-center h-full text-center space-y-8"
+                            >
                                 <div className="relative">
                                     <div className="size-32 bg-orange-500/10 rounded-full animate-ping absolute inset-0"></div>
                                     <div className="size-32 bg-orange-500 rounded-full flex items-center justify-center text-white relative shadow-2xl">
@@ -709,9 +756,9 @@ const FlexFare: React.FC<Props> = ({ onSchedule }) => {
                                     <div className="flex justify-between text-xs"><span className="text-slate-500 font-bold uppercase">Destination</span><span className="font-black truncate w-40 text-right">{destination}</span></div>
                                 </div>
                                 <button onClick={() => { if (activeRide) cancelRide(activeRide.id, 'Changed mind'); setStep('BIDDING'); }} className="text-red-500 font-black text-xs uppercase tracking-widest hover:bg-red-50 px-6 py-3 rounded-xl transition-all">Cancel Request</button>
-                            </div>
-                        )
-                    }
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </aside >
             </main >
 

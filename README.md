@@ -16,51 +16,93 @@ A comprehensive mobility and logistics platform integrating **Ride Hailing**, **
 ## 📋 Table of Contents
 
 - [Features](#-features)
-- [Recent Refactoring](#-recent-refactoring-jan-2026)
+- [User Roles & Journeys](#-user-roles--journeys)
+- [Core Systems](#-core-systems)
+  - [FlexFare Ecosystem](#-the-flexfare-ecosystem)
+  - [Tiffin Logistics](#-tiffin-logistics-engine)
 - [Technology Stack](#-technology-stack)
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
 - [Security](#-security)
-- [Documentation](#-documentation)
 - [Deployment](#-deployment)
-- [Contributing](#-contributing)
 
 ---
 
 ## ✨ Features
 
 ### 🚗 Rider Features
-
-- **Live Map Booking** - Real-time driver tracking with Google Maps
-- **Multiple Vehicle Categories** - Bike, Auto, Mini, Pink Cab (women-only), Prime
-- **Fare Bidding System** - Negotiate fares with drivers
-- **Tiffin Marketplace** - Subscribe to daily meal delivery
-- **Digital Wallet** - Seamless in-app payments
-- **Live Tracking** - Real-time ride progress with OTP verification
-- **Safety Features** - SOS button, trip sharing
+- **Live Map Booking** - Real-time tracking with Google Maps integration.
+- **FlexFare System** - Proprietary fare bidding and negotiation.
+- **Multi-Category Fleet** - Bike, Auto, Mini, Prime, and **Pink Partner** (women-only).
+- **Tiffin Marketplace** - Meal subscriptions with batch delivery.
+- **Digital Wallet** - Native UPI/Card/Wallet payment system via Firestore.
+- **Safety Protocol** - SOS button and live trip sharing with verified OTP.
 
 ### 🚕 Driver Features
+- **Mission Dashboard** - Toggle between Ride and Tiffin delivery modes.
+- **Earnings Forensics** - Real-time yield analysis and performance charts.
+- **KYC Onboarding** - Automated document verification pipeline.
+- **Gamified Tiers** - Performance-based levels (Bronze, Silver, Gold).
+- **Smart Pricing** - Route-specific price adjustment for long-distance hauls.
 
-- **Smart Dashboard** - Accept rides, view earnings, hotspot maps
-- **Dual Mode** - Switch between ride-hailing and tiffin delivery
-- **KYC Verification** - Document upload with DigiLocker integration
-- **Earnings Analytics** - Daily/weekly charts with incentive tracking
-- **Gamification** - Tier system (Bronze/Silver/Gold) based on performance
+### 🎨 Premium UI/UX
+- **Cinematic Experience** - Luxury city hero sections with progressive auto-zoom.
+- **Glassmorphism** - High-depth blurred layers and glowing UI elements.
+- **Responsive Stacking** - Mobile-first layout optimization for high conversion.
+- **Micro-Animations** - Smooth Framer Motion transitions across all screens.
 
-### 🎨 Design & Experience (NEW)
+### 👑 Admin HQ
+- **Operations Heatmap** - Real-time geospatial cluster analysis.
+- **Fleet Control** - Comprehensive driver audit and approval system.
+- **Promo Engine** - Dynamic discount and campaign management.
+- **System Knobs** - Global control over base fares, surge, and student discounts.
 
-- **Premium Aesthetics** - Cinematic hero sections with slow-zoom transitions
-- **Ambient Depth** - Floating blurred orbs and glassmorphic layers
-- **Optimized Mobile Flow** - Intelligent layout stacking for seamless onboarding
-- **Social Proof** - Live ride tracking stats and verified community badges
+---
 
-### 🛡️ Admin Features
+## 👥 User Roles & Journeys
 
-- **Live Operations Dashboard** - Real-time metrics and heatmaps
-- **Fleet Management** - Approve/reject drivers, manage users
-- **Promo Code Engine** - Create and manage promotional campaigns
-- **Tiffin Operations** - Monitor food delivery orders
-- **System Configuration** - Dynamic pricing and surge control
+The platform is built on a **Role-Based UI (RBUI)** architecture, where the interface and available services transform based on the user's authenticated role.
+
+### 👤 Rider Journey
+1.  **Discovery**: Unified search for rides or tiffin vendors using `PlacesService`.
+2.  **Booking**: Select from 5 vehicle categories including **Pink Partner** (women-only).
+3.  **The FlexFare Cycle**: Enter a target fare $\rightarrow$ Driver counter-offers $\rightarrow$ Rider accepts.
+4.  **Live Engagement**: Track ride progress with real-time OTP verification and encrypted chat.
+5.  **Post-Trip**: Rate the experience and pay via Wallet or cash.
+
+### 🚕 Driver Journey
+1.  **Onboarding**: Multi-stage KYC with vehicle document verification.
+2.  **The Hustle**: Toggle between **Ride Mode** and **Tiffin Mode**.
+3.  **Revenue Control**: Set preferred long-distance route pricing using the **Pricing Slider**.
+4.  **Logistics Execution**: Follow optimized batch routes for multiple tiffin deliveries.
+5.  **Financials**: Detailed earnings forensics with weekly performance bonuses.
+
+### 👑 Admin HQ
+1.  **Pulse Monitoring**: Live heatmap of current ride requests and driver locations.
+2.  **Fleet Control**: Audit-log based approval for new driver registrations.
+3.  **Market Calibration**: Real-time adjustment of base fares, per-km rates, and surge multipliers.
+4.  **Logistics Oversight**: Monitor tiffin batch efficiency and delivery success rates.
+
+---
+
+## 💹 The FlexFare Ecosystem
+
+Our proprietary **FlexFare** system moves away from static pricing to a dynamic negotiation model:
+
+-   **Dynamic Base**: System computes an initial fare using `pricing.ts` based on distance, time, and traffic.
+-   **Rider Modification**: Riders can suggest a lower price based on their urgency.
+-   **Driver Counter**: Nearby drivers receive the bid and can accept or counter-offer within a +/- 20% range.
+-   **Fairness Ledger**: The final accepted price is locked into the Firestore document to prevent post-booking disputes.
+
+---
+
+## 🍱 Tiffin Logistics Engine
+
+The **Tiffin Delivery** system uses a custom `RouteOptimizationService` to handle batch deliveries:
+
+-   **Geospatial Clustering**: Orders are grouped (batched) by `batchId` if they share a common pickup zone or delivery route.
+-   **Batch Optimization**: Drivers see "Pick 3, Deliver 3" missions, where routes are sorted using the **Nearest Neighbor** algorithm for maximum efficiency.
+-   **Earnings Multiplier**: Drivers earn a flat delivery fee per tiffin, significantly increasing their hourly yield compared to single rides.
 
 ---
 
@@ -166,168 +208,304 @@ npm run build
 - **Real-time First** - Firestore `onSnapshot` for live updates
 - **Role-Based UI** - Interface transforms based on user role
 
-### Project Structure
+### 🏗️ Project Structure
 
+```text
+.
+├── public/                 # Static assets
+│   ├── assets/             # Images and local binary data
+│   │   └── tiffins/        # MenuItem thumbnails
+│   ├── favicon.png         # App icon
+│   ├── index.html          # Main HTML entry point
+│   └── manifest.json       # PWA manifest
+├── scripts/                # CI/CD and Admin utility scripts
+│   └── setAdminClaim.js    # Firebase Auth custom claims script
+├── src/                    # Application source code
+│   ├── components/         # Reusable UI components
+│   │   ├── Auth/           # Auth UI (OTP, LoginForm, Signup)
+│   │   ├── Booking/        # Ride hailing UI (ServiceSelection, RideRequest)
+│   │   ├── admin/          # Admin dashboard components
+│   │   │   └── tabs/       # Individual HQ tabs (Fleet, LiveOps, etc.)
+│   │   ├── Discovery/      # Maps and location discovery UI
+│   │   ├── Driver/         # Driver-specific UI widgets
+│   │   ├── Safety/         # SOS and safety features
+│   │   ├── Tiffin/         # Tiffin marketplace UI
+│   │   ├── shared/         # Common inputs, chat, and scroll hooks
+│   │   ├── CinematicIntro  # Animated welcome sequence
+│   │   ├── MapContainer    # Core Google Maps integration
+│   │   └── LoadingState    # Glassmorphic skeleton loaders
+│   ├── config/             # Environment validation logic
+│   ├── context/            # React Context (AuthContext)
+│   ├── firebase/           # Auth and Firestore initialization
+│   ├── hooks/              # Custom business logic hooks
+│   │   ├── useRide.ts      # Ride state management
+│   │   └── useSystemConfig # Global admin parameters
+│   ├── screens/            # Application view layers
+│   │   ├── admin/          # AdminHQ Command Center
+│   │   ├── driver/         # Multi-mode Driver Dashboard
+│   │   └── rider/          # FlexFare Home and Tiffin Market
+│   ├── services/           # Backend communication and logic
+│   │   ├── api/            # Low-level Firestore transactions
+│   │   ├── LocationService # Google Geocoding wrapper
+│   │   ├── RoutesService   # Traffic-aware navigation logic
+│   │   └── RouteOptimization # Tiffin batching algorithm
+│   ├── types.ts            # Global TypeScript interfaces
+│   ├── App.tsx             # Main router and app shell
+│   └── firebase.ts         # High-level Firebase configuration
 ```
-src/
-├── components/          # Reusable UI components
-│   ├── Auth/           # Login, Signup, Phone verification
-│   ├── Booking/        # Ride request components
-│   ├── Safety/         # SOS button
-│   ├── Tiffin/         # Tiffin marketplace components
-│   ├── ErrorBoundary.tsx
-│   └── LoadingState.tsx
-├── context/            # React Context providers
-│   └── AuthContext.tsx # Authentication state
-├── hooks/              # Custom React hooks
-│   ├── useRide.ts      # Ride management
-│   ├── useDriverManagement.ts
-│   ├── useTiffinManagement.ts
-│   └── useSystemConfig.ts
-├── screens/            # Page components
-│   ├── rider/          # Rider-specific screens
-│   ├── driver/         # Driver-specific screens
-│   └── admin/          # Admin dashboard
-├── services/           # Business logic
-│   ├── api/            # API abstraction layer
-│   │   ├── rides.ts
-│   │   └── users.ts
-│   └── pricing.ts      # Fare calculation
-├── config/             # Configuration
-│   └── validateEnv.ts  # Environment validation
-├── types.ts            # TypeScript definitions
-└── firebase.ts         # Firebase initialization
+
+### 📂 Full Map Architecture
+
+```text
+.
+├── public/
+│   ├── assets/
+│   │   └── tiffins/        # MenuItem static images
+│   │       ├── dal_roti.png
+│   │       ├── maharaja_thali.png
+│   │       └── special_thali.png
+│   ├── favicon.png
+│   ├── index.html
+│   ├── manifest.json
+│   ├── metadata.json
+│   └── robots.txt
+├── scripts/
+│   └── setAdminClaim.js     # Admin privilege assignment script
+├── src/
+│   ├── components/
+│   │   ├── Auth/
+│   │   │   ├── GoogleButton.jsx
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── PhoneOtpForm.jsx
+│   │   │   ├── PhoneVerification.tsx
+│   │   │   └── SignupForm.tsx
+│   │   ├── Booking/
+│   │   │   ├── RideRequest.tsx
+│   │   │   └── ServiceSelector.tsx
+│   │   ├── Discovery/
+│   │   │   ├── DistrictPicker.tsx
+│   │   │   └── SavedPlaces.tsx
+│   │   ├── Driver/
+│   │   │   └── DriverPricingSlider.tsx
+│   │   ├── Safety/
+│   │   │   └── SOSButton.tsx
+│   │   ├── Tiffin/
+│   │   │   └── TiffinMarketplace.tsx
+│   │   ├── admin/
+│   │   │   ├── tabs/
+│   │   │   │   ├── BroadcastTab.tsx
+│   │   │   │   ├── FleetTab.tsx
+│   │   │   │   ├── LiveOpsTab.tsx
+│   │   │   │   ├── OverviewTab.tsx
+│   │   │   │   ├── PromotionsTab.tsx
+│   │   │   │   ├── ReportsTab.tsx
+│   │   │   │   ├── RidersTab.tsx
+│   │   │   │   ├── SettingsTab.tsx
+│   │   │   │   └── TiffinTab.tsx
+│   │   │   ├── AdminHeader.tsx
+│   │   │   ├── AdminModals.tsx
+│   │   │   ├── AdminSidebar.tsx
+│   │   │   ├── DashboardMetrics.tsx
+│   │   │   ├── LiveHeatmap.tsx
+│   │   │   └── PerformanceAnalytics.tsx
+│   │   ├── shared/
+│   │   │   ├── Chat.tsx
+│   │   │   └── ScrollHint.tsx
+│   │   ├── CinematicIntro.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── GlobalBanner.tsx
+│   │   ├── LoadingState.tsx
+│   │   ├── MapContainer.tsx
+│   │   ├── NavigationOverlay.tsx
+│   │   └── PremiumLoader.tsx
+│   ├── config/
+│   │   └── validateEnv.ts
+│   ├── context/
+│   │   └── AuthContext.tsx
+│   ├── firebase/
+│   │   └── authService.js
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useClickOutside.ts
+│   │   ├── useDriverManagement.ts
+│   │   ├── useRide.ts
+│   │   ├── useSystemConfig.ts
+│   │   └── useTiffinManagement.ts
+│   ├── screens/
+│   │   ├── admin/
+│   │   │   └── AdminHQ.tsx
+│   │   ├── driver/
+│   │   │   ├── DriverDashboard.tsx
+│   │   │   ├── DriverProfile.tsx
+│   │   │   ├── Earnings.tsx
+│   │   │   └── KYC.tsx
+│   │   ├── rider/
+│   │   │   ├── FlexFare.tsx
+│   │   │   ├── LiveTracking.tsx
+│   │   │   ├── RiderHome.tsx
+│   │   │   ├── RiderProfile.tsx
+│   │   │   ├── TiffinMarketplace.tsx
+│   │   │   ├── TripSummary.tsx
+│   │   │   └── Wallet.tsx
+│   │   ├── AuthTestScreen.tsx
+│   │   ├── EmailComplete.tsx
+│   │   └── Welcome.tsx
+│   ├── services/
+│   │   ├── api/
+│   │   │   ├── payment.ts
+│   │   │   ├── rides.ts
+│   │   │   └── users.ts
+│   │   ├── LocationService.ts
+│   │   ├── PlacesService.ts
+│   │   ├── pricing.test.ts
+│   │   ├── pricing.ts
+│   │   ├── RoadsService.ts
+│   │   ├── RouteOptimizationService.ts
+│   │   └── RoutesService.ts
+│   ├── utils/
+│   │   └── GeolocationHelper.ts
+│   ├── App.css
+│   ├── App.test.tsx
+│   ├── App.tsx
+│   ├── firebase.ts
+│   ├── index.css
+│   ├── index.tsx
+│   ├── logo.svg
+│   ├── react-app-env.d.ts
+│   ├── reportWebVitals.ts
+│   ├── setupTests.ts
+│   └── types.ts
+├── .env                     # Local Environment Secrets
+├── .env.example             # Template for Environment Variables
+├── .firebaserc              # Firebase environment configuration
+├── .gitignore               # Ignored files for Git
+├── approve-driver.html      # Legacy approval testing utility
+├── database.rules.json      # Realtime Database security logic
+├── debug-driver.html        # Driver state debugging tool
+├── eslint_report.json       # Linter audit output
+├── firebase.json            # Firebase CLI deployment config
+├── firestore.indexes.json   # Composite index definitions
+├── firestore.rules          # Cloud Firestore Security Rules
+├── package-lock.json        # Locked dependency tree
+├── package.json             # Scripts & Dependency manifest
+├── README.md                # This documentation
+├── storage.rules            # Firebase Storage Security Rules
+└── tsconfig.json            # TypeScript Compiler settings
 ```
 
 ---
 
-## 🔒 Security
+## 🧱 Core Modules Documentation
 
-### Firebase Security Rules
+### 📍 Location Intelligence (`services/`)
+-   **`LocationService`**: Handles reverse geocoding and address normalization using the Google Address Validation API.
+-   **`PlacesService`**: Powers the "Search for zones" feature with intelligent autocomplete and nearby POI discovery.
+-   **`RoadsService`**: Implements snap-to-road logic to ensure driver tracking follows actual street geometry rather than straight lines.
+-   **`RoutesService`**: Computes time-to-arrival (ETA) and distance-to-destination (dist) while considering real-time traffic density.
+-   **`RouteOptimization`**: A specialized engine that computes the mathematical shortest path for tiffin delivery batches.
 
-We've implemented comprehensive security rules:
+### 💰 Financial Engine (`pricing.ts`)
+-   **Surge Pricing**: Automatically inflates fares during high-demand/low-supply periods.
+-   **Tiered Discounts**: Applies dynamic discounts for students (-20%), seniors (-15%), and loyal riders based on trip history.
+-   **Wallet Bridge**: Manages double-entry ledgering for wallet-to-wallet transactions between riders and drivers.
 
-**Firestore Rules** ([`firestore.rules`](firestore.rules))
+### 🏗️ UI Framework (`components/`)
+-   **`MapContainer`**: A highly optimized wrapper for `@react-google-maps/api` with custom styling (Grayscale/Night mode).
+-   **`FlexFare Bidding`**: A real-time state machine that manages the negotiation bridge between rider and driver.
+-   **`Admin Command Center`**: A modular dashboard layout with real-time Firestore listeners for global operations monitoring.
 
-- Role-based access control (Rider/Driver/Admin)
-- Users can only access their own data
-- Drivers need approval to accept rides
-- Admins have full access to all collections
+---
 
-**Storage Rules** ([`storage.rules`](storage.rules))
+## ⚙️ System Configuration
 
-- File type validation (images/PDFs only)
-- Size limits (5MB for images, 10MB for documents)
-- User-specific access control
+The platform's behavior is cross-configured via the **AdminHQ Settings**:
 
-**Realtime Database Rules** ([`database.rules.json`](database.rules.json))
+| Variable | Description | Default Value |
+| :--- | :--- | :--- |
+| **Base Fare** | Minimum charge for any ride booking | ₹40.00 |
+| **Per KM Rate** | Charge per kilometer based on vehicle type | ₹12.00 - ₹25.00 |
+| **Surge Multiplier** | Real-time multiplier based on demand | 1.0x - 2.5x |
+| **Loyalty Threshold** | Rides required to unlock 'Gold' status | 50 Trips |
+| **Tiffin Fee** | Flat delivery fee earned by the driver | ₹15.00 / tiffin |
 
-- Authentication required for all operations
-- Role-based read/write permissions
+---
+
+## 🔒 Security & Persistence
+
+### Firebase Logic
+-   **Firestore Rules**: Role-based access control (Rider/Driver/Admin). Drivers require `isApproved` status to accept rides.
+-   **Storage Rules**: Strict type validation (images/PDF) and 10MB individual file limits.
+-   **Realtime DB**: Used for high-frequency location pings with ephemeral node TTLs.
 
 ### Environment Validation
-
-The app validates all required environment variables on startup and provides clear error messages if any are missing.
-
----
-
-## 📚 Documentation
-
-<!-- ### Refactoring Documentation
-
-All refactoring work is documented in detail:
-
-1. **[Implementation Plan](docs/implementation_plan.md)** - Complete P0-P3 roadmap
-2. **[Walkthrough](docs/walkthrough.md)** - What was implemented
-3. **[Quick Reference](docs/QUICK_REFERENCE.md)** - Code examples for new hooks/services
-4. **[Final Summary](docs/FINAL_SUMMARY.md)** - Complete overview
-5. **[Deployment Success](docs/DEPLOYMENT_SUCCESS.md)** - Production deployment status -->
-
-### Key Features Documentation
-
-- **Custom Hooks Usage**:
-
-  ```typescript
-  // Driver management
-  const { drivers, approveDriver, rejectDriver } = useDriverManagement({
-    status: "PENDING",
-  });
-
-  // Tiffin orders
-  const { orders, assignDriver } = useTiffinManagement();
-
-  // System config
-  const { config, updateBaseFare } = useSystemConfig();
-  ```
-
-- **API Services Usage**:
-
-  ```typescript
-  import { ridesAPI } from "./services/api/rides";
-
-  // Create ride
-  const rideId = await ridesAPI.create({
-    /* ... */
-  });
-
-  // Subscribe to updates
-  const unsubscribe = ridesAPI.subscribeToRide(rideId, (ride) => {
-    console.log("Status:", ride.status);
-  });
-  ```
-
----
-
-## 🚀 Deployment
-
-### Firebase Deployment
-
-```bash
-# 1. Login to Firebase
-firebase login
-
-# 2. Deploy security rules
-firebase deploy --only firestore:rules,storage:rules,database:rules
-
-# 3. Deploy hosting
-npm run build
-firebase deploy --only hosting
-```
-
-### Current Deployment
-
-- [**Live App**](https://gaadiwala-app.web.app)
-- [**Firebase Console**](https://console.firebase.google.com/project/gaadiwala-app/overview)
-- **Build Size**: 418 kB (gzipped)
-- **Status**: ✅ Production-ready
+The application uses a strict `validateEnv.ts` boot-sequence. If critical API keys (Firebase/Maps) are missing, the UI gracefully falls back to a global configuration error state rather than crashing.
 
 ---
 
 ## 🎯 Roadmap
 
-### ✅ Completed (P0 & P1)
+### ✅ Completed (v1.0 - Jan 2026)
+- [x] **Premium UI/UX**: Cinematic city-zoom hero and glassmorphism.
+- [x] **FlexFare System**: Native negotiation bridge between users.
+- [x] **Tiffin Optimization**: Route batching logic for high-yield deliveries.
+- [x] **Security Hardening**: Comprehensive Firestore/Storage security rules.
+- [x] **Earnings Forecast**: Real-time yields and demand prediction charts.
 
-- Environment validation
-- Firebase security rules
-- Custom hooks architecture
-- API service layer
-- Enhanced error handling
-- Production deployment
+### 🔄 In Progress (v1.1)
+- [ ] **Internationalization**: Full i18n support for Hindi and Regional dialects.
+- [ ] **Advanced Analytics**: Cohort analysis for rider retention in AdminHQ.
+- [ ] **PWA Support**: Offline-first capabilities for low-bandwidth zones.
 
-### 🔄 In Progress (P2)
+### 📋 Planned (v2.0)
+- [ ] **AI Route Prediction**: Predicting high-demand zones before they happen.
+- [ ] **Fleet API**: External API access for third-party logistics partners.
+- [ ] **Electric Fleet (EV)**: Specialized booking category with charging station maps.
 
-- [ ] Refactor AdminHQ using new hooks
-- [ ] Add Zod form validation
-- [ ] Remove remaining `any` types
-- [ ] Optimize re-renders with `useMemo`/`useCallback`
+## 📚 Documentation & Reference
 
-### 📋 Planned (P3)
+### Custom Hooks (`hooks/`)
+```typescript
+// Driver Lifecycle
+const { drivers, approveDriver, rejectDriver } = useDriverManagement({ status: "PENDING" });
 
-- [ ] React Query for data fetching
-- [ ] Code splitting with lazy loading
-- [ ] Storybook for component development
-- [ ] E2E testing with Playwright
-- [ ] Full internationalization (i18n)
+// Tiffin Operations
+const { orders, assignDriver } = useTiffinManagement();
+
+// System Calibration
+const { config, updateBaseFare } = useSystemConfig();
+```
+
+### API Service Layer (`services/api/`)
+```typescript
+import { ridesAPI } from "./services/api/rides";
+
+// Real-time Ride Subscription
+const unsubscribe = ridesAPI.subscribeToRide(rideId, (ride) => {
+  console.log("Current Status:", ride.status);
+});
+```
+
+---
+
+## 🚀 Deployment
+
+### Firebase CLI Commands
+```bash
+# 1. Auth Login
+firebase login
+
+# 2. Deploy Rules (Firestore/Storage/RTDB)
+firebase deploy --only firestore:rules,storage:rules,database:rules
+
+# 3. Production Build & Hosting
+npm run build
+firebase deploy --only hosting
+```
+
+### Production status
+- [**Live Link**](https://gaadiwala-app.web.app)
+- **Tech Version**: v1.0.4-stable
+- **Build Compression**: gzip/brotli enabled
 
 ---
 

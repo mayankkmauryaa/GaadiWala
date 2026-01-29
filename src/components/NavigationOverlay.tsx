@@ -43,7 +43,7 @@ const NavigationOverlay: React.FC<Props> = ({ user, onLogout, updateUserProfile 
     return (
         <>
             {/* Top Right Menu Pill */}
-            <div className="fixed top-6 right-6 z-[9999]" ref={menuRef}>
+            <div className="fixed top-3 right-6 z-[9999]" ref={menuRef}>
                 <div className="relative">
                     <button
                         onClick={() => setIsOpen(!isOpen)}

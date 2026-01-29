@@ -38,14 +38,8 @@ const ScrollHint: React.FC<ScrollHintProps> = ({ containerRef, color = 'text-[#0
     if (!isVisible) return null;
 
     return (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-1 animate-bounce pointer-events-none lg:hidden">
-            <span className={`material-symbols-outlined ${color} text-4xl drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>
-                keyboard_double_arrow_down
-            </span>
-            <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${color} bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm`}>
-                More Content
-            </span>
-        </div>
+        <>
+        </>
     );
 };
 

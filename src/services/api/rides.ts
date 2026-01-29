@@ -154,4 +154,26 @@ export const ridesAPI = {
             throw new Error(`Failed to fetch available rides: ${error.message}`);
         }
     },
+
+    /**
+     * Get completed rides for a driver
+     */
+    getDriverRideHistory: async (driverId: string): Promise<any[]> => {
+        try {
+            const historyQuery = query(
+                collection(db, 'rideRequests'),
+                where('driverId', '==', driverId),
+                where('status', '==', RideStatus.COMPLETED)
+            );
+            const snapshot = await getDocs(historyQuery);
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate() || new Date()
+            }));
+        } catch (error: any) {
+            console.error('Error fetching driver ride history:', error);
+            throw new Error(`Failed to fetch ride history: ${error.message}`);
+        }
+    },
 };
