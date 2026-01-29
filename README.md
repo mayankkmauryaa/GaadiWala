@@ -1,13 +1,15 @@
-# 🚗 GaadiWala - Multi-Service Mobility Platform
+# 🚗 GaadiWala - Multi-Platform Mobility Ecosystem
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://gaadiwala-app.web.app)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/mayankkmauryaa/GaadiWala)
 [![Firebase](https://img.shields.io/badge/Firebase-Deployed-orange)](https://firebase.google.com)
+[![Expo](https://img.shields.io/badge/Expo-Mobile-black)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React%20Native-Mobile-61DAFB)](https://reactnative.dev/)
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://reactjs.org/)
 
-[**Live App**](https://gaadiwala-app.web.app)
+[**Live Web App**](https://gaadiwala-app.web.app) | [**Mobile Setup Guide**](#-mobile-app-quick-start)
 
 A comprehensive mobility and logistics platform integrating **Ride Hailing**, **Tiffin Delivery**, and **Wallet** systems. Recently upgraded with a **Premium, AI-driven UI** featuring cinematic backgrounds, glassmorphism, and advanced mobile responsiveness.
 
@@ -21,7 +23,11 @@ A comprehensive mobility and logistics platform integrating **Ride Hailing**, **
   - [FlexFare Ecosystem](#-the-flexfare-ecosystem)
   - [Tiffin Logistics](#-tiffin-logistics-engine)
 - [Technology Stack](#-technology-stack)
+  - [Web Stack](#-web-stack)
+  - [Mobile Stack](#-mobile-stack)
 - [Quick Start](#-quick-start)
+  - [Web Quick Start](#-web-app-quick-start)
+  - [Mobile Quick Start](#-mobile-app-quick-start)
 - [Architecture](#-architecture)
 - [Security](#-security)
 - [Deployment](#-deployment)
@@ -44,6 +50,14 @@ A comprehensive mobility and logistics platform integrating **Ride Hailing**, **
 - **KYC Onboarding** - Automated document verification pipeline.
 - **Gamified Tiers** - Performance-based levels (Bronze, Silver, Gold).
 - **Smart Pricing** - Route-specific price adjustment for long-distance hauls.
+
+### 📱 Mobile Platform Features
+- **Expo Framework** - High-performance React Native environment.
+- **Native Map Integration** - Optimized map rendering via `react-native-maps`.
+- **Advanced Gestures** - Fluid interactions powered by `react-native-gesture-handler`.
+- **Custom Animations** - 60FPS UI transitions using `react-native-reanimated`.
+- **Glassmorphic Mobile UI** - Premium design with `expo-blur` and `expo-linear-gradient`.
+- **Location Services** - Precise real-time tracking with `expo-location`.
 
 ### 🎨 Premium UI/UX
 - **Cinematic Experience** - Luxury city hero sections with progressive auto-zoom.
@@ -130,6 +144,7 @@ The **Tiffin Delivery** system uses a custom `RouteOptimizationService` to handl
 
 ## 🛠️ Technology Stack
 
+### 🌐 Web Stack
 | Layer         | Technology            | Usage                               |
 | ------------- | --------------------- | ----------------------------------- |
 | **Frontend**  | React 19 + TypeScript | Core framework                      |
@@ -141,18 +156,28 @@ The **Tiffin Delivery** system uses a custom `RouteOptimizationService` to handl
 | **Charts**    | Recharts              | Admin analytics                     |
 | **Animation** | Framer Motion         | Page transitions & modals           |
 
+### 📱 Mobile Stack
+| Layer         | Technology               | Usage                               |
+| ------------- | ------------------------ | ----------------------------------- |
+| **Framework** | Expo + React Native      | Global mobile environment           |
+| **Routing**   | Expo Router (File-based) | Native navigation                   |
+| **Styling**   | StyleSheet API           | Native device-optimized styling     |
+| **Animations**| Reanimated + Moti        | Fluid high-performance movements    |
+| **Maps**      | React Native Maps        | Native Mapbox/Apple/Google Maps     |
+| **Auth**      | Firebase SDK             | Cross-platform identity sync        |
+| **Storage**   | Async Storage            | Local persistent persistence        |
+
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
+### 🌐 Web App Quick Start
+#### Prerequisites
 - Node.js (v16+)
 - npm
 - Firebase account
 
-### Installation
-
+#### Installation
 ```bash
 # 1. Clone the repository
 git clone https://github.com/mayankkmauryaa/GaadiWala
@@ -166,8 +191,7 @@ cp .env.example .env
 # Fill in your Firebase and Google Maps API keys
 ```
 
-### Required Environment Variables
-
+#### Required Environment Variables
 ```env
 # Firebase
 REACT_APP_FIREBASE_API_KEY=your_api_key
@@ -179,23 +203,36 @@ REACT_APP_FIREBASE_APP_ID=your_app_id
 
 # Google Maps
 REACT_APP_GOOGLE_MAPS_API_KEY=your_maps_key
-
-# Optional
-REACT_APP_RAZORPAY_KEY_ID=your_razorpay_key
 ```
 
-### Running Locally
-
+#### Running Locally
 ```bash
 npm start
 # Opens http://localhost:3000
 ```
 
-### Building for Production
+### 📱 Mobile App Quick Start
+#### Prerequisites
+- Node.js (v18+)
+- Expo Go (on phone) or Android/iOS Emulator
 
+#### Installation
 ```bash
-npm run build
-# Creates optimized build in ./build
+# 1. Navigate to mobile directory
+cd mobile
+
+# 2. Install dependencies
+npm install
+
+# 3. Environment Configuration
+cp .env.example .env
+# Fill in your Firebase and Maps keys (Mobile specific)
+```
+
+#### Running Locally
+```bash
+npx expo start
+# Scan the QR code with Expo Go or press 'a' for Android / 'i' for iOS
 ```
 
 ---
@@ -204,15 +241,22 @@ npm run build
 
 ### Design Philosophy
 
-- **Thick Client** - Business logic in React frontend
-- **Real-time First** - Firestore `onSnapshot` for live updates
-- **Role-Based UI** - Interface transforms based on user role
+- **Thick Client** - Business logic in React and React Native frontends
+- **Cross-Platform Sync** - Unified Firebase backend for seamless data flow between platforms
+- **Real-time First** - Firestore `onSnapshot` and native Listeners for live updates
+- **Role-Based UI** - Interface transforms based on user role (Rider/Driver/Admin)
 
 ### 🏗️ Project Structure
 
 ```text
 .
-├── public/                 # Static assets
+├── mobile/                 # 📱 Mobile Application (Expo/React Native)
+│   ├── app/                # File-based routing (Admin, Driver, User)
+│   ├── components/         # Mobile-specific UI components
+│   ├── context/            # Auth and State contexts
+│   ├── services/           # Native service wrappers (Maps, Location)
+│   └── hooks/              # Custom mobile hooks
+├── public/                 # Static assets (Web)
 │   ├── assets/             # Images and local binary data
 │   │   └── tiffins/        # MenuItem thumbnails
 │   ├── favicon.png         # App icon
@@ -220,7 +264,7 @@ npm run build
 │   └── manifest.json       # PWA manifest
 ├── scripts/                # CI/CD and Admin utility scripts
 │   └── setAdminClaim.js    # Firebase Auth custom claims script
-├── src/                    # Application source code
+├── src/                    # 🌐 Web Application source code
 │   ├── components/         # Reusable UI components
 │   │   ├── Auth/           # Auth UI (OTP, LoginForm, Signup)
 │   │   ├── Booking/        # Ride hailing UI (ServiceSelection, RideRequest)
