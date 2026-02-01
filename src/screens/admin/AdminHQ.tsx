@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, deleteField } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { User, UserRole, Report, TiffinOrder, TiffinVendor, RideRequest, RideStatus, PromoCode } from '../../types';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -22,6 +22,16 @@ import SettingsTab from '../../components/admin/tabs/SettingsTab';
 import BroadcastTab from '../../components/admin/tabs/BroadcastTab';
 import PromotionsTab from '../../components/admin/tabs/PromotionsTab';
 import ReportsTab from '../../components/admin/tabs/ReportsTab';
+
+interface DriverUpdate {
+    id: string;
+    driverId: string;
+    driverName: string;
+    changes: Record<string, { before: any; after: any }>;
+    timestamp: Date;
+    status: 'PENDING' | 'REVIEWED';
+    requiresReview: boolean;
+}
 
 interface Props {
     onApprove: (id: string, approved: boolean, reason?: string) => void;
@@ -55,8 +65,10 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
     const [showSidebar, setShowSidebar] = useState(false);
     const sidebarRef = useRef<HTMLDivElement>(null);
     const mainScrollRef = useRef<HTMLDivElement>(null);
+    const notificationRef = useRef<HTMLDivElement>(null);
 
     useClickOutside(sidebarRef, () => setShowSidebar(false));
+    useClickOutside(notificationRef, () => setShowNotifications(false));
 
     // Data States
     const [users, setUsers] = useState<User[]>([]);
@@ -66,6 +78,7 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
     const [tiffinVendors, setTiffinVendors] = useState<TiffinVendor[]>([]);
     const [activeRides, setActiveRides] = useState<RideRequest[]>([]);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+    const [driverUpdates, setDriverUpdates] = useState<DriverUpdate[]>([]);
     const [stats] = useState({ revenue: 0, totalRides: 0, tiffinRevenue: 0 });
 
     // State for filtering
@@ -146,6 +159,12 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
             }
         });
 
+        // Driver Updates Listener
+        const qDriverUpdates = query(collection(db, 'driverUpdates'), where('status', '==', 'PENDING'));
+        const unsubDriverUpdates = onSnapshot(qDriverUpdates, (snapshot) => {
+            setDriverUpdates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DriverUpdate)));
+        });
+
         return () => {
             unsubUsers();
             unsubDrivers();
@@ -155,6 +174,7 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
             unsubTiffinOrders();
             unsubRides();
             unsubConfig();
+            unsubDriverUpdates();
         };
     }, []);
 
@@ -200,8 +220,7 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
             if (isEcosystemPurge) {
                 await updateDoc(doc(db, 'users', user.id), {
                     isActive: false,
-                    deletedAt: new Date(),
-                    name: `[Inactive] ${user.name}`
+                    deletedAt: new Date()
                 });
                 alert("Account deactivated.");
             } else {
@@ -314,6 +333,14 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
         }
     };
 
+    const handleMarkUpdateReviewed = async (updateId: string) => {
+        try {
+            await updateDoc(doc(db, 'driverUpdates', updateId), { status: 'REVIEWED' });
+        } catch (err) {
+            alert("Failed to mark update as reviewed.");
+        }
+    };
+
     // Infrastructure UI States
     const [showNotifications, setShowNotifications] = useState(false);
     const [showOpsGrid, setShowOpsGrid] = useState(false);
@@ -345,7 +372,7 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
                     activeTab={activeTab}
                     onNotificationClick={() => setShowNotifications(!showNotifications)}
                     onGridViewClick={() => setShowOpsGrid(!showOpsGrid)}
-                    notificationCount={pendingDriversCount + reports.length}
+                    notificationCount={pendingDriversCount + reports.length + driverUpdates.length}
                 />
 
                 <div
@@ -355,7 +382,7 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
                     <ScrollHint containerRef={mainScrollRef} />
                     {/* NOTIFICATION CENTER */}
                     {showNotifications && (
-                        <div className="absolute top-24 right-10 z-[100] w-96 bg-[#161B22]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                        <div ref={notificationRef} className="absolute top-24 right-10 z-[100] w-96 bg-[#161B22]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in slide-in-from-top-4 duration-300">
                             <div className="p-8 border-b border-white/5 flex items-center justify-between">
                                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">System Intel</h3>
                                 <button onClick={() => setShowNotifications(false)} className="text-[10px] font-black uppercase text-slate-700 hover:text-white transition-colors">Dismiss</button>
@@ -385,7 +412,39 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
                                         <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">{reports.length} system reports require administrative resolution.</p>
                                     </div>
                                 )}
-                                {pendingDriversCount === 0 && reports.length === 0 && (
+                                {driverUpdates.length > 0 && driverUpdates.map(update => (
+                                    <div
+                                        key={update.id}
+                                        className="p-8 border-b border-white/5 hover:bg-white/[0.02] transition-all"
+                                    >
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <div className="size-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center"><span className="material-symbols-outlined">edit_note</span></div>
+                                            <div className="flex-1">
+                                                <p className="text-xs font-black uppercase text-white tracking-widest">Driver Profile Updated</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">{update.driverName}</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 mb-4">
+                                            {Object.entries(update.changes).map(([field, change]) => (
+                                                <div key={field} className="bg-white/[0.02] rounded-xl p-3">
+                                                    <p className="text-[9px] font-black uppercase text-slate-600 mb-1">{field}</p>
+                                                    <div className="flex items-center gap-2 text-[10px]">
+                                                        <span className="text-red-400 line-through">{JSON.stringify(change.before) || 'None'}</span>
+                                                        <span className="text-slate-600">→</span>
+                                                        <span className="text-green-400 font-bold">{JSON.stringify(change.after)}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => handleMarkUpdateReviewed(update.id)}
+                                            className="w-full px-4 py-2 bg-blue-500/10 text-blue-500 text-[9px] font-black uppercase rounded-lg hover:bg-blue-500 hover:text-white transition-all"
+                                        >
+                                            Mark as Reviewed
+                                        </button>
+                                    </div>
+                                ))}
+                                {pendingDriversCount === 0 && reports.length === 0 && driverUpdates.length === 0 && (
                                     <div className="p-12 text-center">
                                         <span className="material-symbols-outlined text-4xl text-slate-800 mb-4 animate-pulse">check_circle</span>
                                         <p className="text-[10px] font-black uppercase text-slate-700 tracking-[0.3em]">Protocol Nominal</p>
@@ -415,11 +474,11 @@ const AdminHQ: React.FC<Props> = ({ onApprove }) => {
                     )}
 
                     {/* NOTIFICATION_TOAST_PROTOCOL */}
-                    {(pendingDriversCount > 0 || reports.length > 0) && !showNotifications && (
+                    {(pendingDriversCount > 0 || reports.length > 0 || driverUpdates.length > 0) && !showNotifications && (
                         <div className="mb-8 flex items-center justify-between p-6 bg-orange-500/10 border border-orange-500/20 rounded-3xl animate-pulse">
                             <div className="flex items-center gap-4">
                                 <span className="material-symbols-outlined text-orange-500">priority_high</span>
-                                <p className="text-[11px] font-black uppercase text-orange-500 tracking-[0.2em]">Infrastructure Anomalies Detected: {pendingDriversCount + reports.length} Nodes Pending Audit</p>
+                                <p className="text-[11px] font-black uppercase text-orange-500 tracking-[0.2em]">Infrastructure Anomalies Detected: {pendingDriversCount + reports.length + driverUpdates.length} Nodes Pending Audit</p>
                             </div>
                             <button onClick={() => setShowNotifications(true)} className="px-4 py-1.5 bg-orange-500 text-white text-[9px] font-black uppercase rounded-lg shadow-lg">Review Manifest</button>
                         </div>

@@ -123,6 +123,12 @@ export interface RideRequest {
     acceptedAt?: any;
     isRideCheckEnabled?: boolean;
     preferences?: RidePreferences;
+    // Optimistic locking and idempotency
+    version?: number;
+    locationSequence?: number;
+    locationUpdatedAt?: any;
+    declinedDrivers?: string[]; // Track drivers who declined to prevent re-dispatch
+    dispatchedDrivers?: string[]; // Track all dispatched drivers for deduplication
 }
 
 export interface Message {
@@ -159,6 +165,7 @@ export enum RideStatus {
     STARTED = 'STARTED',
     COMPLETED = 'COMPLETED',
     CANCELLED = 'CANCELLED',
+    DECLINED = 'DECLINED', // Driver declined
     PAYMENT_PENDING = 'PAYMENT_PENDING',
 }
 

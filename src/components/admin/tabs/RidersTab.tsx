@@ -62,7 +62,7 @@ const RidersTab: React.FC<RidersTabProps> = ({
                                                 <img src={rider.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${rider.id}`} className="size-full rounded-xl object-cover" alt="avatar" />
                                             </div>
                                             <div>
-                                                <p className="font-black text-base text-white uppercase italic tracking-tighter leading-none mb-1.5">{rider.name || 'ANON_USER'}</p>
+                                                <p className="font-black text-base text-white uppercase italic tracking-tighter leading-none mb-1.5">{rider.name?.replace(/^\[Inactive\]\s*/i, '') || 'ANON_USER'}</p>
                                                 <p className="text-[9px] text-slate-500 font-bold tracking-widest lowercase leading-none">{rider.email || rider.phone || 'NO_CONTACT_LOCATED'}</p>
                                             </div>
                                         </div>

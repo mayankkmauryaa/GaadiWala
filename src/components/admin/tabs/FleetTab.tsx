@@ -77,7 +77,7 @@ const FleetTab: React.FC<FleetTabProps> = ({
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="font-black text-base text-white tracking-tight italic uppercase leading-none mb-1.5">{driver.name}</p>
+                                                <p className="font-black text-base text-white tracking-tight italic uppercase leading-none mb-1.5">{driver.name?.replace(/^\[Inactive\]\s*/i, '')}</p>
                                                 <p className="text-[9px] text-[#00D1FF] font-black uppercase tracking-[0.2em] italic opacity-60 leading-none">{driver.phone || 'GHOST_ID'}</p>
                                             </div>
                                         </div>
@@ -89,7 +89,12 @@ const FleetTab: React.FC<FleetTabProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        {driver.isApproved ? (
+                                        {driver.isActive === false ? (
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="px-3 py-1 bg-slate-700/50 text-slate-400 text-[8px] font-black uppercase rounded-lg border border-slate-600/30 w-fit">Deactivated</span>
+                                                <p className="text-[7px] text-slate-600 font-bold uppercase tracking-tighter italic">Account Purged</p>
+                                            </div>
+                                        ) : driver.isApproved ? (
                                             <div className="flex items-center gap-2 text-emerald-500 group-hover:scale-105 transition-transform origin-left">
                                                 <span className="size-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
                                                 <span className="text-[9px] font-black uppercase tracking-widest">Active Ops</span>
@@ -169,7 +174,7 @@ const FleetTab: React.FC<FleetTabProps> = ({
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-black text-sm text-white uppercase italic">{driver.name}</p>
+                                        <p className="font-black text-sm text-white uppercase italic">{driver.name?.replace(/^\[Inactive\]\s*/i, '')}</p>
                                         <p className="text-[8px] text-[#00D1FF] font-black uppercase tracking-widest">{driver.phone || 'GHOST_ID'}</p>
                                     </div>
                                 </div>

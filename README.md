@@ -70,6 +70,13 @@ A comprehensive mobility and logistics platform integrating **Ride Hailing**, **
 - **Fleet Control** - Comprehensive driver audit and approval system.
 - **Promo Engine** - Dynamic discount and campaign management.
 - **System Knobs** - Global control over base fares, surge, and student discounts.
+- **Signal Forensics** - Real-time analysis of driver connectivity and location reliability.
+
+### ⚡ Atomic Dispatch Engine (New)
+- **Zero-Duplicate Guarantee** - Idempotent dispatch logic prevents double-bookings.
+- **Atomic Declines** - Transactional status updates ensure declined rides never reappear.
+- **Sequence Enforcer** - Location updates are strictly ordered to reject stale GPS data.
+- **Smart Deduplication** - Client/Server handshake to purge duplicate ride notifications.
 
 ---
 
@@ -290,6 +297,7 @@ npx expo start
 │   │   └── rider/          # FlexFare Home and Tiffin Market
 │   ├── services/           # Backend communication and logic
 │   │   ├── api/            # Low-level Firestore transactions
+│   │   ├── dispatch/       # ⚡ Atomic Dispatch & signal processing
 │   │   ├── LocationService # Google Geocoding wrapper
 │   │   ├── RoutesService   # Traffic-aware navigation logic
 │   │   └── RouteOptimization # Tiffin batching algorithm
@@ -494,6 +502,7 @@ The application uses a strict `validateEnv.ts` boot-sequence. If critical API ke
 - [x] **Tiffin Optimization**: Route batching logic for high-yield deliveries.
 - [x] **Security Hardening**: Comprehensive Firestore/Storage security rules.
 - [x] **Earnings Forecast**: Real-time yields and demand prediction charts.
+- [x] **Dispatch Core v2**: Atomic operations, idempotency, and signal sequencing.
 
 ### 🔄 In Progress (v1.1)
 - [ ] **Internationalization**: Full i18n support for Hindi and Regional dialects.

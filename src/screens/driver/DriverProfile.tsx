@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Language, VehicleCategory } from '../../types';
 import ScrollHint from '../../components/shared/ScrollHint';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface Props {
     user: User;
@@ -29,6 +31,7 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
         vehicleImage: user.vehicleImage || '',
         bio: user.bio || '',
         languages: user.languages || [] as string[],
+        gender: user.gender as 'MALE' | 'FEMALE' | undefined,
     });
 
     const totalRides = user.totalRides || 0;
@@ -138,6 +141,21 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
                 formData.vehicleType !== user.vehicleType ||
                 formData.vehicleImage !== (user.vehicleImage || '');
 
+            // Track changes for admin notification
+            const changes: Record<string, { before: any; after: any }> = {};
+
+            // Compare each field and track changes
+            if (formData.name !== user.name) changes.name = { before: user.name, after: formData.name };
+            if (formData.phone !== user.phone) changes.phone = { before: user.phone, after: formData.phone };
+            if (formData.vehicleModel !== user.vehicleModel) changes.vehicleModel = { before: user.vehicleModel, after: formData.vehicleModel };
+            if (formData.vehicleNumber !== user.vehicleNumber) changes.vehicleNumber = { before: user.vehicleNumber, after: formData.vehicleNumber };
+            if (formData.vehicleType !== user.vehicleType) changes.vehicleType = { before: user.vehicleType, after: formData.vehicleType };
+            if (formData.bio !== user.bio) changes.bio = { before: user.bio, after: formData.bio };
+            if (formData.gender !== user.gender) changes.gender = { before: user.gender, after: formData.gender };
+            if (JSON.stringify(formData.languages) !== JSON.stringify(user.languages)) {
+                changes.languages = { before: user.languages, after: formData.languages };
+            }
+
             const updateData: Partial<User> = {
                 ...formData,
                 ...(vehicleChanged ? {
@@ -147,6 +165,19 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
             };
 
             await updateUserProfile(updateData);
+
+            // Log changes to driverUpdates collection for admin notification
+            if (Object.keys(changes).length > 0) {
+                await addDoc(collection(db, 'driverUpdates'), {
+                    driverId: user.id,
+                    driverName: user.name,
+                    changes,
+                    timestamp: new Date(),
+                    status: 'PENDING',
+                    requiresReview: vehicleChanged
+                });
+            }
+
             setIsEditing(false);
 
             if (vehicleChanged) {
@@ -485,6 +516,38 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
                                     </div>
                                 </div>
                             </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4 flex-1">
+                                    <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 shrink-0">
+                                        <span className="material-symbols-outlined text-sm">person</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[8px] font-black uppercase text-slate-500 mb-1">Gender</p>
+                                        {isEditing ? (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, gender: 'MALE' })}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${formData.gender === 'MALE' ? 'bg-blue-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm mr-1 align-middle">male</span>Male
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, gender: 'FEMALE' })}
+                                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${formData.gender === 'FEMALE' ? 'bg-pink-500 text-white' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm mr-1 align-middle">female</span>Female
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm font-bold">
+                                                {user.gender === 'MALE' ? '👨 Male' : user.gender === 'FEMALE' ? '👩 Female' : 'Not set'}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -496,9 +559,10 @@ const DriverProfile: React.FC<Props> = ({ user, lang, updateUserProfile, logout 
                     >
                         {text.logout}
                     </button>
-                )}
-            </main>
-        </div>
+                )
+                }
+            </main >
+        </div >
     );
 };
 

@@ -15,6 +15,8 @@ import { getNearestRoad } from '../../services/RoadsService';
 import { validateAddress } from '../../services/LocationService';
 import { CONFIG } from '../../firebase';
 import ScrollHint from '../../components/shared/ScrollHint';
+import { declineRideRequest } from '../../services/dispatch/dispatchService';
+import { ClientSideDedup } from '../../services/dispatch/notificationDedup';
 
 interface Props {
     user: User;
@@ -26,6 +28,7 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
     const navigate = useNavigate();
     const [incomingRide, setIncomingRide] = useState<RideRequest | null>(null);
     const [activeTrip, setActiveTrip] = useState<RideRequest | null>(null);
+    const [notificationDedup] = useState(() => new ClientSideDedup());
 
     // Tiffin State
     const [mode, setMode] = useState<'RIDE' | 'TIFFIN'>('RIDE');
@@ -189,6 +192,29 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
             setIncomingDistance(null);
         }
     }, [allPendingRequests, user.isOnline, user.currentLocation, user.id, user.isApproved]);
+
+    // Deduplication: Filter out already declined or dispatched rides
+    useEffect(() => {
+        if (!incomingRide) return;
+
+        // Check if this notification has already been processed
+        const notificationId = `${incomingRide.id}:${user.id}:${incomingRide.version || 0}`;
+        if (notificationDedup.hasProcessed(notificationId)) {
+            console.log('Duplicate notification detected, ignoring:', notificationId);
+            setIncomingRide(null);
+            return;
+        }
+
+        // Check if driver already declined this request
+        if (incomingRide.declinedDrivers?.includes(user.id)) {
+            console.log('Driver already declined this request, ignoring');
+            setIncomingRide(null);
+            return;
+        }
+
+        // Mark as processed
+        notificationDedup.markAsProcessed(notificationId);
+    }, [incomingRide, user.id, notificationDedup]);
 
 
     // 4. Background Location Tracking for Online Drivers
@@ -471,6 +497,32 @@ const DriverDashboard: React.FC<Props> = ({ user, lang, setLang }) => {
             } else {
                 alert("Failed to accept ride. Please check your internet connection and try again.");
             }
+        }
+    };
+
+    const handleDecline = async (reason: string = 'Not available') => {
+        if (!incomingRide) return;
+
+        console.log('Declining ride:', incomingRide.id, 'Reason:', reason);
+
+        try {
+            // Use atomic decline service
+            const result = await declineRideRequest(incomingRide.id, user.id, reason);
+
+            if (result.success) {
+                console.log('Decline successful');
+                // Clear incoming ride immediately
+                setIncomingRide(null);
+            } else {
+                console.error('Decline failed:', result.error);
+                if (!result.alreadyProcessed) {
+                    alert('Failed to decline ride: ' + result.error);
+                }
+                setIncomingRide(null);
+            }
+        } catch (err) {
+            console.error('Decline error:', err);
+            alert('Failed to decline ride. Please try again.');
         }
     };
 

@@ -6,7 +6,7 @@ import { useRef } from 'react';
 import ScrollHint from '../../components/shared/ScrollHint';
 
 interface Props {
-    onComplete: (details: { vehicleImage: string; vehicleNumber: string; vehicleType: VehicleCategory }) => Promise<void>;
+    onComplete: (details: { vehicleImage: string; vehicleNumber: string; vehicleType: VehicleCategory; gender: 'MALE' | 'FEMALE' }) => Promise<void>;
 }
 
 const KYC: React.FC<Props> = ({ onComplete }) => {
@@ -14,6 +14,7 @@ const KYC: React.FC<Props> = ({ onComplete }) => {
     const [vehicleType, setVehicleType] = useState<VehicleCategory>(VehicleCategory.MINI);
     const [vehicleNumber, setVehicleNumber] = useState('');
     const [vehicleImage, setVehicleImage] = useState<string | null>(null);
+    const [gender, setGender] = useState<'MALE' | 'FEMALE' | ''>('');
     const [isVerifying, setIsVerifying] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -63,6 +64,10 @@ const KYC: React.FC<Props> = ({ onComplete }) => {
     };
 
     const handleNext = () => {
+        if (!gender) {
+            alert("Please select your gender.");
+            return;
+        }
         if (vehicleNumber && vehicleImage) {
             setStep('verify');
             // In a real app, this would route to /driver/digilocker
@@ -80,7 +85,8 @@ const KYC: React.FC<Props> = ({ onComplete }) => {
             await onComplete({
                 vehicleImage: vehicleImage || '',
                 vehicleNumber: vehicleNumber || 'UP 85 XX 0000',
-                vehicleType
+                vehicleType,
+                gender: gender as 'MALE' | 'FEMALE'
             });
             // Redirect to dashboard after successful profile update
             navigate('/driver/dashboard');
@@ -132,6 +138,26 @@ const KYC: React.FC<Props> = ({ onComplete }) => {
                                             <span className="text-[10px] font-black uppercase tracking-widest">{cat}</span>
                                         </button>
                                     ))}
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Gender</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setGender('MALE')}
+                                            className={`h-14 rounded-2xl border-2 font-bold flex items-center justify-center gap-2 transition-all ${gender === 'MALE' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                                        >
+                                            <span className="material-symbols-outlined">male</span> Male
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGender('FEMALE')}
+                                            className={`h-14 rounded-2xl border-2 font-bold flex items-center justify-center gap-2 transition-all ${gender === 'FEMALE' ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                                        >
+                                            <span className="material-symbols-outlined">female</span> Female
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-1">

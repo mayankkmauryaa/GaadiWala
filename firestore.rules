@@ -157,6 +157,38 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     
+    // NEW: Decline log collection
+    // Drivers can create decline logs for their own declines
+    match /declineLog/{logId} {
+      allow read: if isAdmin() || resource.data.driverId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                      request.resource.data.driverId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['requestId', 'driverId', 'reason', 'timestamp', 'requestVersion']);
+    }
+    
+    // NEW: Dispatch log collection
+    // System can create dispatch logs, drivers and admins can read
+    match /dispatchLog/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+                      request.resource.data.keys().hasAll(['requestId', 'driverId', 'timestamp', 'requestVersion', 'idempotencyKey']);
+    }
+    
+    // NEW: Location log collection
+    // For audit trail of location updates
+    match /locationLog/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() &&
+                      request.resource.data.keys().hasAll(['requestId', 'lat', 'lng', 'address', 'sequence', 'timestamp']);
+    }
+    
+    // NEW: Driver updates collection (from previous implementation)
+    match /driverUpdates/{updateId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+    }
+    
     // Default deny all other access
     match /{document=**} {
       allow read, write: if false;
